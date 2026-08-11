@@ -25,7 +25,7 @@ router.post('/login', async (req, res, next) => {
       req.session.save((e2) => {
         if (e2) return next(e2);
         emitirCsrf(res, producao);
-        res.json({ email: admin.email });
+        res.json({ email: admin.email, siteUrl: process.env.SITE_PUBLIC_URL || '' });
       });
     });
   } catch (e) {
@@ -45,7 +45,9 @@ router.post('/logout', (req, res) => {
 router.get('/sessao', (req, res) => {
   if (!req.session?.adminId) return res.status(401).json({ erro: 'nao autenticado' });
   emitirCsrf(res, producao);
-  res.json({ email: req.session.email });
+  // O painel precisa disto para exibir fotos de caminho relativo (uploads/...),
+  // que so existem no dominio do site publico.
+  res.json({ email: req.session.email, siteUrl: process.env.SITE_PUBLIC_URL || '' });
 });
 
 export default router;
