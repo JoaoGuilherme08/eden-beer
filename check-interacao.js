@@ -88,9 +88,25 @@ async function testaModal(p, largura) {
   A(await fechado(p), 'navega normal depois de fechar');
 }
 
+async function testaWhatsApp(p) {
+  console.log('\nlinks de whatsapp');
+  const esperado = 'https://wa.me/5518996254970'; // wa.me so aceita digitos
+  let total = 0;
+  for (const tela of ['Início', 'Barris & Eventos', 'Growlers', 'Onde Encontrar', 'Revenda']) {
+    await p.getByRole('button', { name: tela, exact: true }).first().click();
+    await p.waitForTimeout(300);
+    const hrefs = await p.$$eval('a[href*="wa.me"]', (as) => as.map((a) => a.href));
+    A(hrefs.length > 0 && hrefs.every((h) => h === esperado), `${tela}: ${hrefs.length} link(s) para o numero certo`);
+    total += hrefs.length;
+  }
+  A(total >= 6, `todos os ${total} links conferidos`);
+}
+
 async function testaCarrossel(p) {
   console.log('\ncarrossel (mouse)');
-  let box = await trazCarrossel(p);
+  await p.getByRole('button', { name: 'Início', exact: true }).first().click();
+  await p.waitForTimeout(300);
+  const box = await trazCarrossel(p);
   A(box.y >= 0, 'carrossel visivel para o teste de arrasto');
 
   const v0 = await velocidade(p, 1200);
@@ -185,7 +201,10 @@ async function testaToque(p) {
     await p.goto(process.env.SITE_URL, { waitUntil: 'networkidle' });
     await p.waitForSelector('[data-carousel]');
     await testaModal(p, largura);
-    if (largura === 1280) await testaCarrossel(p);
+    if (largura === 1280) {
+      await testaWhatsApp(p);
+      await testaCarrossel(p);
+    }
     await p.close();
   }
 

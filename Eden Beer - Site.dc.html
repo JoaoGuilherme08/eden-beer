@@ -534,7 +534,9 @@ class Component extends DCLogic {
   }
 
   renderVals() {
-    const wa = this.props.whatsappNumber || '5518999999999';
+    // wa.me so aceita digitos: o numero e escrito formatado ("+55 18 99625-4970")
+    // na prop, entao tira tudo que nao for digito antes de montar o link.
+    const wa = String(this.props.whatsappNumber || '+55 18 99625-4970').replace(/\D/g, '');
     const ig = this.props.instagramHandle || 'edenbeer';
     const ifood = this.props.ifoodUrl || 'https://www.ifood.com.br/delivery/birigui-sp/eden-beer-centro/f7ad8c52-b7cf-4595-bab6-0c76ee8e99af';
     const page = this.state.page;
