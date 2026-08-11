@@ -27,12 +27,29 @@
     .eb-carousel img { -webkit-user-drag: none; user-drag: none; }
     .eb-navbtns { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .eb-navbtns::-webkit-scrollbar { display: none; }
+    /* Setinha indicando que a faixa de atalhos rola para o lado. So no mobile,
+       onde a faixa nao cabe inteira. Fica na mesma celula da grid que os botoes,
+       sobreposta a direita — sem pointer-events para nao roubar o clique deles. */
+    .eb-navhint { display: none; }
+    @keyframes edenCutuca { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
     /* Nav vira 2 linhas (logo em cima, atalhos rolando embaixo) — unico ponto que
        precisa de breakpoint; o resto do site e fluido via clamp()/auto-fit. */
     @media (max-width: 720px) {
       .eb-nav { grid-template-columns: 1fr !important; row-gap: 6px; padding: 8px 10px !important; }
-      .eb-logo { justify-self: center !important; }
+      .eb-logo { grid-area: 1 / 1; justify-self: center !important; }
       .eb-logo > div { width: 60px !important; height: 60px !important; }
+      .eb-navbtns { grid-area: 2 / 1; }
+      .eb-navhint {
+        grid-area: 2 / 1;
+        display: flex; align-items: center; justify-content: flex-end;
+        justify-self: end; align-self: stretch;
+        width: 44px; padding-right: 2px; pointer-events: none;
+        background: linear-gradient(to right, rgba(251,243,231,0), #FBF3E7 65%);
+      }
+      .eb-navhint svg { animation: edenCutuca 1.5s ease-in-out infinite; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .eb-navhint svg { animation: none; }
     }
   </style>
 </helmet>
@@ -51,6 +68,9 @@
       <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="7">
         <button onClick="{{ item.go }}" style="font-family:'Poppins',sans-serif; font-weight:600; font-size:12px; border:1.5px solid #17303A; border-radius:16px; padding:6px 9px; cursor:pointer; background:{{ item.bg }}; color:{{ item.color }}; white-space:nowrap; flex:0 0 auto;">{{ item.label }}</button>
       </sc-for>
+    </div>
+    <div class="eb-navhint" aria-hidden="true">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17303A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"></polyline></svg>
     </div>
   </div>
 

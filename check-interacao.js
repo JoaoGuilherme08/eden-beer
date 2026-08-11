@@ -88,6 +88,36 @@ async function testaModal(p, largura) {
   A(await fechado(p), 'navega normal depois de fechar');
 }
 
+// A setinha fica por cima da faixa de atalhos: o risco e roubar o clique deles.
+async function testaDicaMenu(p, largura) {
+  console.log(`\nsetinha do menu @ ${largura}px`);
+  const mobile = largura <= 720;
+  const dica = p.locator('.eb-navhint');
+
+  if (!mobile) {
+    A(!(await dica.isVisible()), 'escondida no desktop');
+    return;
+  }
+
+  A(await dica.isVisible(), 'aparece no mobile');
+  const [d, faixa] = await Promise.all([dica.boundingBox(), p.locator('.eb-navbtns').boundingBox()]);
+  A(Math.abs(d.x + d.width - (faixa.x + faixa.width)) < 2, 'colada na borda direita da faixa');
+  A(d.y >= faixa.y - 2 && d.y + d.height <= faixa.y + faixa.height + 2, 'na mesma linha dos botoes');
+  A(d.x + d.width <= largura + 1, 'nao vaza a viewport');
+
+  const dentro = await p.evaluate(([x, y]) => !!document.elementFromPoint(x, y).closest('.eb-navhint'),
+    [d.x + d.width / 2, d.y + d.height / 2]);
+  A(!dentro, 'nao intercepta o ponteiro');
+
+  for (const nome of ['Início', 'Catálogo', 'Barris & Eventos', 'Growlers', 'Nossa História', 'Onde Encontrar', 'Revenda']) {
+    await p.getByRole('button', { name: nome, exact: true }).first().click({ timeout: 8000 });
+    await p.waitForTimeout(100);
+  }
+  A(true, 'os 7 atalhos continuam clicaveis com ela por cima');
+  await p.getByRole('button', { name: 'Início', exact: true }).first().click();
+  await p.waitForTimeout(200);
+}
+
 async function testaWhatsApp(p) {
   console.log('\nlinks de whatsapp');
   const esperado = 'https://wa.me/5518996254970'; // wa.me so aceita digitos
@@ -200,6 +230,7 @@ async function testaToque(p) {
     const p = await browser.newPage({ viewport: { width: largura, height: 800 } });
     await p.goto(process.env.SITE_URL, { waitUntil: 'networkidle' });
     await p.waitForSelector('[data-carousel]');
+    await testaDicaMenu(p, largura);
     await testaModal(p, largura);
     if (largura === 1280) {
       await testaWhatsApp(p);
