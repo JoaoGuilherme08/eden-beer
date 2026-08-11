@@ -61,6 +61,8 @@ async function testaModal(p, largura) {
 
   await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
   await p.waitForTimeout(300);
+  await p.getByRole('button', { name: 'Growlers', exact: true }).first().click();
+  await p.waitForTimeout(300);
   await cardPorNome(p, '7x1').click();
   await p.waitForTimeout(300);
   t = await corpoModal(p).textContent();
@@ -145,38 +147,51 @@ async function testaDicaMenu(p, largura) {
   await p.waitForTimeout(200);
 }
 
-// Latas e growlers vivem no mesmo catalogo, separados por dois titulos.
-async function testaCatalogoUnificado(p) {
-  console.log('\ncatalogo unificado');
-  A(await p.getByRole('button', { name: 'Growlers', exact: true }).count() === 0, 'Growlers saiu do menu');
+// Latas e growlers no mesmo catalogo, trocados por abas.
+async function testaAbas(p) {
+  console.log('\ncatalogo com abas');
+  const aba = (nome) => p.getByRole('button', { name: nome, exact: true }).last();
+  const cards = () => p.locator('button:has(img)').count();
+  const growlerGrande = () => p.locator('img[alt="Growlers Eden Beer"]');
 
+  // pagina nova: a aba padrao so pode ser verificada sem estado de teste anterior
+  await p.reload({ waitUntil: 'networkidle' });
   await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
   await p.waitForTimeout(350);
 
-  const titulos = await p.$$eval('h2', (hs) => hs.map((h) => h.textContent.trim()));
-  A(titulos.includes('Latas') && titulos.includes('Growlers'), `tem as duas secoes (${titulos.join(', ')})`);
-  A(titulos.indexOf('Latas') < titulos.indexOf('Growlers'), 'Latas vem antes de Growlers');
+  // abre em Latas
+  A(await cards() === 11, `abre em Latas com as 11 latas (achou ${await cards()})`);
+  A(!(await growlerGrande().isVisible()), 'imagem do growler nao aparece na aba Latas');
+  A(await p.locator('button:has(img)').filter({ hasText: '7x1' }).count() === 0, 'growler nao aparece em Latas');
 
-  // 11 latas + 23 growlers, todas na mesma tela
-  const cards = await p.locator('button:has(img)').count();
-  A(cards === 34, `mostra as 34 bebidas juntas (achou ${cards})`);
+  await aba('Growlers').click();
+  await p.waitForTimeout(400);
+  A(await cards() === 23, `Growlers mostra os 23 growlers (achou ${await cards()})`);
+  A(await growlerGrande().isVisible(), 'imagem grande do growler aparece');
+  const img = await growlerGrande().boundingBox();
+  A(img.height > 250, `imagem e grande de verdade (${Math.round(img.width)}x${Math.round(img.height)})`);
+  A(img.y < (await p.locator('button:has(img)').first().boundingBox()).y, 'imagem vem acima do catalogo');
+  A(await p.locator('button:has(img)').filter({ hasText: 'The Sea' }).count() === 0, 'lata nao aparece em Growlers');
+  A(await p.getByRole('link', { name: 'Pedir meu Growler' }).count() === 0, 'CTA "Pedir meu Growler" removido');
 
-  // Weizen, Red Ale, Don Felix e Wikileaks existem como lata E como growler:
-  // e por isso que a divisao importa — os dois cards tem de coexistir.
+  await aba('Latas').click();
+  await p.waitForTimeout(400);
+  A(await cards() === 11, 'volta para Latas');
+  A(!(await growlerGrande().isVisible()), 'imagem some ao voltar');
+
+  // nomes repetidos: um card em cada aba, nunca dois juntos
   for (const nome of ['Weizen', 'Red Ale', 'Don Felix', 'Wikileaks']) {
     const n = await p.locator('button:has(img)').filter({ hasText: nome }).count();
-    A(n === 2, `"${nome}" aparece nas duas secoes (${n} cards)`);
+    A(n === 1, `"${nome}" aparece 1x em Latas (${n})`);
   }
 
-  // o CTA de growler veio junto da pagina antiga
-  A(await p.getByRole('link', { name: 'Pedir meu Growler' }).count() === 1, 'CTA "Pedir meu Growler" preservado');
-
-  // e o card da home leva para ca, ja que a pagina de growlers nao existe mais
+  // card da home abre direto na aba Growlers
   await p.getByRole('button', { name: 'Início', exact: true }).first().click();
   await p.waitForTimeout(300);
   await p.locator('div', { hasText: /^Growlers de 1L/ }).first().click();
-  await p.waitForTimeout(350);
-  A(await p.locator('h1').first().textContent() === 'Catálogo de Bebidas', 'card "Growlers de 1L" da home leva ao catalogo');
+  await p.waitForTimeout(400);
+  A(await p.locator('h1').first().textContent() === 'Catálogo de Bebidas', 'card da home leva ao catalogo');
+  A(await growlerGrande().isVisible(), 'e ja abre na aba Growlers');
 }
 
 // O iFood ficou so no botao do hero da home; produtos e demais telas nao tem.
@@ -197,6 +212,8 @@ async function testaIfood(p) {
   }
 
   await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
+  await p.waitForTimeout(250);
+  await p.getByRole('button', { name: 'Latas', exact: true }).first().click(); // pode vir da aba Growlers
   await p.waitForTimeout(250);
   await cardPorNome(p, 'The Sea').click();
   await p.waitForTimeout(350);
@@ -320,7 +337,7 @@ async function testaToque(p) {
     await testaDicaMenu(p, largura);
     await testaModal(p, largura);
     if (largura === 1280) {
-      await testaCatalogoUnificado(p);
+      await testaAbas(p);
       await testaIfood(p);
       await testaWhatsApp(p);
       await testaCarrossel(p);

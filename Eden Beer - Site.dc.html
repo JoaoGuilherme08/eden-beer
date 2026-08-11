@@ -144,7 +144,7 @@
           <div style="font-family:'Fredoka',sans-serif; font-size:24px; font-weight:600; margin-top:8px;">Chopp para Eventos</div>
           <p style="font-size:14px; line-height:1.6; margin-top:8px;">Barris de 20L, 30L e 50L com delivery para festas e eventos. Peça o seu.</p>
         </div>
-        <div onClick="{{ goCatalogo }}" style="cursor:pointer; background:#E63888; border:3px solid #17303A; border-radius:20px; padding:30px; color:#fff; box-shadow:6px 6px 0 #17303A;">
+        <div onClick="{{ goGrowlers }}" style="cursor:pointer; background:#E63888; border:3px solid #17303A; border-radius:20px; padding:30px; color:#fff; box-shadow:6px 6px 0 #17303A;">
           <img src="uploads/pasted-1786470555223-0.png" alt="Growler" style="width:44px; height:auto;">
           <div style="font-family:'Fredoka',sans-serif; font-size:24px; font-weight:600; margin-top:8px;">Growlers de 1L</div>
           <p style="font-size:14px; line-height:1.6; margin-top:8px;">Leve seu chopp favorito para casa em growlers de 1 litro.</p>
@@ -172,7 +172,13 @@
         <p style="font-size:16px; color:#3B5560; max-width:600px;">Cada bebida tem uma arte, um estilo e uma personalidade. Confira as fichas técnicas.</p>
       </div>
 
-      <h2 style="font-family:'Fredoka',sans-serif; font-size:clamp(24px,6vw,30px); margin:38px 0 22px;">Latas</h2>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin:28px 0 30px;">
+        <sc-for list="{{ abas }}" as="ab" hint-placeholder-count="2">
+          <button onClick="{{ ab.go }}" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:clamp(15px,3.6vw,17px); border:3px solid #17303A; border-radius:26px; padding:10px 28px; cursor:pointer; background:{{ ab.bg }}; color:{{ ab.color }};">{{ ab.label }}</button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{ abaLatas }}" hint-placeholder-val="{{ true }}">
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:26px;">
         <sc-for list="{{ products }}" as="p" hint-placeholder-count="6">
           <button onClick="{{ p.open }}" style="text-align:left; font-family:'Poppins',sans-serif; padding:0; background:#fff; border:3px solid #17303A; border-radius:20px; overflow:hidden; box-shadow:6px 6px 0 #17303A; display:flex; flex-direction:column; cursor:pointer; color:#17303A;">
@@ -192,10 +198,17 @@
           </button>
         </sc-for>
       </div>
+      </sc-if>
 
-      <h2 style="font-family:'Fredoka',sans-serif; font-size:clamp(24px,6vw,30px); margin:56px 0 10px;">Growlers</h2>
-      <p style="font-size:16px; line-height:1.7; color:#3B5560; max-width:600px; margin:0;">Leve o chopp Eden Beer para casa fresquinho, direto do barril. Os growlers de 1L podem ser reabastecidos sempre que você voltar.</p>
-      <a href="{{ waLink }}" target="_blank" style="display:inline-block; margin:16px 0 26px; font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; background:#E63888; color:#fff; border:3px solid #17303A; border-radius:30px; padding:12px 26px;">Pedir meu Growler</a>
+      <sc-if value="{{ abaGrowlers }}" hint-placeholder-val="{{ false }}">
+      <!-- A imagem e retrato 2:3: na largura toda daria ~1770px de altura e
+           enterraria o catalogo, entao e limitada pela altura. -->
+      <div style="display:flex; justify-content:center; margin-bottom:26px;">
+        <div style="border-radius:20px; overflow:hidden; border:3px solid #17303A; box-shadow:8px 8px 0 #17303A; line-height:0; max-width:100%;">
+          <img src="uploads/pasted-1786470555223-0.png" alt="Growlers Eden Beer" style="display:block; max-height:min(62vh,560px); width:auto; max-width:100%;">
+        </div>
+      </div>
+      <p style="font-size:16px; line-height:1.7; color:#3B5560; max-width:600px; margin:0 0 26px;">Leve o chopp Eden Beer para casa fresquinho, direto do barril. Os growlers de 1L podem ser reabastecidos sempre que você voltar.</p>
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:26px;">
         <sc-for list="{{ growlers }}" as="g" hint-placeholder-count="6">
           <button onClick="{{ g.open }}" style="text-align:left; font-family:'Poppins',sans-serif; padding:0; background:#fff; border:3px solid #17303A; border-radius:20px; overflow:hidden; box-shadow:6px 6px 0 #17303A; display:flex; flex-direction:column; cursor:pointer; color:#17303A;">
@@ -208,6 +221,7 @@
           </button>
         </sc-for>
       </div>
+      </sc-if>
     </div>
   </sc-if>
 
@@ -426,6 +440,7 @@ const BARRELS = [
 class Component extends DCLogic {
   state = {
     page: 'home',
+    aba: 'latas',
     selected: null,
     formNome: '', formLoja: '', formCidade: '', formWhats: '', formMsg: '',
     revendaSent: false,
@@ -605,6 +620,13 @@ class Component extends DCLogic {
       color: page === key ? '#fff' : '#17303A',
     }));
 
+    const aba = this.state.aba;
+    const abas = [['latas', 'Latas'], ['growlers', 'Growlers']].map(([key, label]) => ({
+      label, go: () => this.setState({ aba: key }),
+      bg: aba === key ? '#17303A' : '#fff',
+      color: aba === key ? '#fff' : '#17303A',
+    }));
+
     const open = item => () => this.setState({ selected: item });
 
     return {
@@ -615,10 +637,14 @@ class Component extends DCLogic {
       igHandle: ig,
       goHome: () => this.go('home'),
       goCatalogo: () => this.go('catalogo'),
+      goGrowlers: () => this.setState({ page: 'catalogo', aba: 'growlers', selected: null }),
       goBarris: () => this.go('barris'),
       goRevenda: () => this.go('revenda'),
       isHome: page === 'home',
       isCatalogo: page === 'catalogo',
+      abas,
+      abaLatas: aba === 'latas',
+      abaGrowlers: aba === 'growlers',
       isBarris: page === 'barris',
       isHistoria: page === 'historia',
       isOnde: page === 'onde',
