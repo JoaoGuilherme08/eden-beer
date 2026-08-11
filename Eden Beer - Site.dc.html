@@ -19,8 +19,12 @@
     input, textarea { font-family: 'Poppins', sans-serif; }
     @keyframes edenFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-14px) rotate(3deg); } }
     @keyframes edenSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes edenMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
     img { max-width: 100%; }
+    /* Carrossel: rola sozinho via rAF na logica, e o usuario pode arrastar.
+       overscroll-behavior impede o swipe lateral de virar "voltar" no celular. */
+    .eb-carousel { scrollbar-width: none; -webkit-overflow-scrolling: touch; user-select: none; overscroll-behavior-x: contain; }
+    .eb-carousel::-webkit-scrollbar { display: none; }
+    .eb-carousel img { -webkit-user-drag: none; user-drag: none; }
     .eb-navbtns { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .eb-navbtns::-webkit-scrollbar { display: none; }
     /* Nav vira 2 linhas (logo em cima, atalhos rolando embaixo) — unico ponto que
@@ -77,8 +81,8 @@
             <a href="{{ ifoodLink }}" target="_blank" style="font-family:'Poppins',sans-serif; font-weight:600; font-size:14px; background:#EA1D2C; color:#fff; border-radius:16px; padding:6px 14px;">Pedir no iFood</a>
           </div>
         </div>
-        <div style="overflow:hidden;">
-          <div style="display:flex; gap:22px; padding-bottom:14px; width:max-content; animation:edenMarquee 26s linear infinite;" style-hover="animation-play-state:paused;">
+        <div class="eb-carousel" data-carousel style="overflow-x:auto; cursor:grab;">
+          <div style="display:flex; gap:22px; padding-bottom:14px; width:max-content;">
             <sc-for list="{{ homeCans }}" as="p" hint-placeholder-count="0">
               <div style="flex:0 0 180px; text-align:center;">
                 <div style="width:180px; height:220px; border-radius:16px; overflow:hidden; border:3px solid #17303A; box-shadow:5px 5px 0 #17303A;">
@@ -413,6 +417,121 @@ class Component extends DCLogic {
   };
 
   go(page) { this.setState({ page, selected: null }); }
+
+  componentDidMount() { this.montaCarrossel(); }
+  componentDidUpdate() { this.montaCarrossel(); }
+  componentWillUnmount() { this.desmontaCarrossel(); }
+
+  desmontaCarrossel() {
+    if (this.carrossel) this.carrossel.limpa();
+    this.carrossel = null;
+  }
+
+  montaCarrossel() {
+    const el = document.querySelector('[data-carousel]');
+    if (this.carrossel && this.carrossel.el === el) return;
+    this.desmontaCarrossel();
+    if (!el) return;
+
+    const trilha = el.firstElementChild;
+    // A lista e duplicada: meia trilha e o ponto de emenda.
+    const meio = () => (trilha ? trilha.scrollWidth / 2 : 0);
+    const calmo = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // ~85px/s: a mesma velocidade da animacao CSS que isso substituiu
+    // (metade da trilha, ~2220px, em 26s).
+    const VEL = 0.085;
+
+    let pausado = calmo, arrastando = false, sobre = false, x0 = 0, left0 = 0, t0 = 0, timer = 0, raf = 0;
+
+    const retomaDepois = () => {
+      clearTimeout(timer);
+      // 700ms deixa a inercia do toque assentar antes de voltar a correr.
+      timer = setTimeout(() => { if (!arrastando && !calmo) pausado = false; }, 700);
+    };
+
+    // A posicao vive num float proprio: ler de volta o scrollLeft arredonda para
+    // o pixel do dispositivo e perderia a fracao a cada quadro, deixando a
+    // velocidade dependente do DPR da tela.
+    let pos = el.scrollLeft;
+
+    // Emenda o laco tambem durante o arrasto, senao o usuario esbarra no fim da
+    // trilha. left0 anda junto para o calculo do arrasto nao dar um pulo.
+    const envolve = () => {
+      const m = meio();
+      if (m <= 0) return;
+      if (pos >= m) { pos -= m; left0 -= m; }
+      else if (pos < 0) { pos += m; left0 += m; }
+      else return;
+      el.scrollLeft = pos;
+    };
+
+    const passo = (t) => {
+      const dt = t0 ? Math.min(t - t0, 50) : 16;
+      t0 = t;
+      if (pausado || arrastando) {
+        pos = el.scrollLeft; // o usuario mandou: ressincroniza
+        envolve();
+      } else {
+        pos += dt * VEL;
+        envolve();
+        el.scrollLeft = pos;
+      }
+      raf = requestAnimationFrame(passo);
+    };
+    raf = requestAnimationFrame(passo);
+
+    const onDown = (e) => {
+      pausado = true;
+      clearTimeout(timer);
+      if (e.pointerType !== 'mouse') return; // toque usa o scroll nativo
+      arrastando = true;
+      x0 = e.clientX;
+      left0 = el.scrollLeft;
+      el.setPointerCapture(e.pointerId);
+      el.style.cursor = 'grabbing';
+    };
+    const onMove = (e) => {
+      if (!arrastando) return;
+      e.preventDefault();
+      el.scrollLeft = left0 - (e.clientX - x0);
+    };
+    const onUp = () => {
+      arrastando = false;
+      el.style.cursor = 'grab';
+      retomaDepois();
+    };
+    // Pausado por inercia do toque: cada scroll adia a retomada ate o movimento
+    // parar. Pausado por hover e diferente — ali o scroll nao pode retomar nada,
+    // senao o proprio movimento residual destrava a pausa.
+    const onScroll = () => { if (pausado && !arrastando && !sobre) retomaDepois(); };
+    // pointerenter/leave em vez de mouseenter/leave: no celular o mouse
+    // sintetizado pelo toque marcaria hover e travaria o carrossel pausado.
+    const onEnter = (e) => { if (e.pointerType !== 'mouse') return; sobre = true; pausado = true; clearTimeout(timer); };
+    const onLeave = (e) => { if (e.pointerType !== 'mouse') return; sobre = false; if (!arrastando) retomaDepois(); };
+
+    el.addEventListener('pointerdown', onDown);
+    el.addEventListener('pointermove', onMove);
+    el.addEventListener('pointerup', onUp);
+    el.addEventListener('pointercancel', onUp);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    el.addEventListener('pointerenter', onEnter);
+    el.addEventListener('pointerleave', onLeave);
+
+    this.carrossel = {
+      el,
+      limpa() {
+        cancelAnimationFrame(raf);
+        clearTimeout(timer);
+        el.removeEventListener('pointerdown', onDown);
+        el.removeEventListener('pointermove', onMove);
+        el.removeEventListener('pointerup', onUp);
+        el.removeEventListener('pointercancel', onUp);
+        el.removeEventListener('scroll', onScroll);
+        el.removeEventListener('pointerenter', onEnter);
+        el.removeEventListener('pointerleave', onLeave);
+      },
+    };
+  }
 
   renderVals() {
     const wa = this.props.whatsappNumber || '5518999999999';
