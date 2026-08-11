@@ -20,49 +20,58 @@
     @keyframes edenFloat { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-14px) rotate(3deg); } }
     @keyframes edenSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @keyframes edenMarquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+    img { max-width: 100%; }
+    .eb-navbtns { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .eb-navbtns::-webkit-scrollbar { display: none; }
+    /* Nav vira 2 linhas (logo em cima, atalhos rolando embaixo) — unico ponto que
+       precisa de breakpoint; o resto do site e fluido via clamp()/auto-fit. */
+    @media (max-width: 720px) {
+      .eb-nav { grid-template-columns: 1fr !important; row-gap: 6px; padding: 8px 10px !important; }
+      .eb-logo { justify-self: center !important; }
+      .eb-logo > div { width: 60px !important; height: 60px !important; }
+    }
   </style>
 </helmet>
 
 <div style="min-height:100vh; background:#FBF3E7; font-family:'Poppins',sans-serif; color:#17303A; overflow-x:hidden;">
 
   <!-- NAV -->
-  <div style="position:sticky; top:0; z-index:50; background:#FBF3E7; border-bottom:3px solid #17303A; display:grid; grid-template-columns:110px 1fr 110px; align-items:center; padding:6px 20px;">
-    <div onClick="{{ goHome }}" style="display:flex; align-items:center; gap:10px; cursor:pointer; font-family:'Fredoka',sans-serif; justify-self:start;">
+  <div class="eb-nav" style="position:sticky; top:0; z-index:50; background:#FBF3E7; border-bottom:3px solid #17303A; display:grid; grid-template-columns:110px 1fr 110px; align-items:center; padding:6px 20px;">
+    <div class="eb-logo" onClick="{{ goHome }}" style="display:flex; align-items:center; gap:10px; cursor:pointer; font-family:'Fredoka',sans-serif; justify-self:start;">
       <div style="position:relative; width:100px; height:100px;">
-        <div style="position:absolute; top:50%; left:50%; width:116px; height:116px; margin:-58px 0 0 -58px; border-radius:50%; background:repeating-conic-gradient(#17303A 0deg 9deg, transparent 9deg 20deg); animation:edenSpin 18s linear infinite;"></div>
-        <img src="uploads/574192651_18549776617018519_7126564038112895348_n.jpg" alt="Eden Beer" style="position:relative; width:100px; height:100px; border-radius:50%; border:2px solid #17303A;">
+        <div style="position:absolute; inset:-8px; border-radius:50%; background:repeating-conic-gradient(#17303A 0deg 9deg, transparent 9deg 20deg); animation:edenSpin 18s linear infinite;"></div>
+        <img src="uploads/574192651_18549776617018519_7126564038112895348_n.jpg" alt="Eden Beer" style="position:relative; width:100%; height:100%; border-radius:50%; border:2px solid #17303A;">
       </div>
     </div>
-    <div style="display:flex; gap:5px; flex-wrap:nowrap; justify-content:center; overflow-x:auto; justify-self:center;">
+    <div class="eb-navbtns" style="display:flex; gap:5px; flex-wrap:nowrap; justify-content:safe center; overflow-x:auto; justify-self:stretch;">
       <sc-for list="{{ navItems }}" as="item" hint-placeholder-count="7">
         <button onClick="{{ item.go }}" style="font-family:'Poppins',sans-serif; font-weight:600; font-size:12px; border:1.5px solid #17303A; border-radius:16px; padding:6px 9px; cursor:pointer; background:{{ item.bg }}; color:{{ item.color }}; white-space:nowrap; flex:0 0 auto;">{{ item.label }}</button>
       </sc-for>
     </div>
-    <div></div>
   </div>
 
-  <a href="{{ waLink }}" target="_blank" style="position:fixed; bottom:26px; right:26px; z-index:60; width:64px; height:64px; border-radius:50%; box-shadow:4px 4px 0 #17303A; overflow:hidden;">
+  <a href="{{ waLink }}" target="_blank" style="position:fixed; bottom:calc(18px + env(safe-area-inset-bottom)); right:18px; z-index:60; width:58px; height:58px; border-radius:50%; box-shadow:4px 4px 0 #17303A; overflow:hidden;">
     <img src="uploads/pasted-1786466526040-0.png" alt="WhatsApp" style="width:100%; height:100%; object-fit:cover;">
   </a>
 
   <!-- HOME -->
   <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
     <div data-screen-label="Início">
-      <div style="position:relative; background:#caa872 url('uploads/pasted-1786468489123-0.png') center center/cover no-repeat; padding:90px 28px 110px; overflow:hidden; text-align:center;">
+      <div style="position:relative; background:#caa872 url('uploads/pasted-1786468489123-0.png') center center/cover no-repeat; padding:clamp(48px,10vw,90px) clamp(16px,5vw,28px) clamp(56px,12vw,110px); overflow:hidden; text-align:center;">
         <div style="position:relative; z-index:2; max-width:820px; margin:0 auto;">
-          <div style="font-family:'Fredoka',sans-serif; font-weight:700; font-size:clamp(46px,7vw,88px); line-height:1; color:#FFD400; -webkit-text-stroke:2px #17303A; text-shadow:4px 4px 0 #E63888;">O PECADO É<br>NÃO PROVAR!</div>
-          <p style="font-size:19px; font-weight:600; color:#17303A; margin:26px auto 0; max-width:640px; line-height:1.6; text-shadow:0 1px 0 rgba(255,255,255,0.4);">Chopp e cerveja artesanal com arte na lata. Nascida em Maringá, hoje presente em mais de 30 cidades do Brasil — com casa em Birigui.</p>
-          <div style="display:flex; gap:16px; justify-content:center; margin-top:34px; flex-wrap:wrap;">
-            <button onClick="{{ goCatalogo }}" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:17px; background:#F2670A; color:#fff; border:3px solid #17303A; border-radius:30px; padding:14px 30px; cursor:pointer;">Ver Catálogo</button>
-            <a href="{{ ifoodLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:17px; background:#EA1D2C; color:#fff; border:3px solid #17303A; border-radius:30px; padding:14px 30px;">Pedir no iFood</a>
-            <a href="{{ waLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:17px; background:#fff; color:#17303A; border:3px solid #17303A; border-radius:30px; padding:14px 30px;">Falar no WhatsApp</a>
+          <div style="font-family:'Fredoka',sans-serif; font-weight:700; font-size:clamp(34px,8vw,88px); line-height:1; color:#FFD400; -webkit-text-stroke:2px #17303A; text-shadow:4px 4px 0 #E63888;">O PECADO É<br>NÃO PROVAR!</div>
+          <p style="font-size:clamp(16px,4vw,19px); font-weight:600; color:#17303A; margin:26px auto 0; max-width:640px; line-height:1.6; text-shadow:0 1px 0 rgba(255,255,255,0.4);">Chopp e cerveja artesanal com arte na lata. Nascida em Maringá, hoje presente em mais de 30 cidades do Brasil — com casa em Birigui.</p>
+          <div style="display:flex; gap:12px; justify-content:center; margin-top:34px; flex-wrap:wrap;">
+            <button onClick="{{ goCatalogo }}" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:clamp(15px,3.6vw,17px); background:#F2670A; color:#fff; border:3px solid #17303A; border-radius:30px; padding:14px clamp(18px,5vw,30px); cursor:pointer;">Ver Catálogo</button>
+            <a href="{{ ifoodLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:clamp(15px,3.6vw,17px); background:#EA1D2C; color:#fff; border:3px solid #17303A; border-radius:30px; padding:14px clamp(18px,5vw,30px);">Pedir no iFood</a>
+            <a href="{{ waLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:clamp(15px,3.6vw,17px); background:#fff; color:#17303A; border:3px solid #17303A; border-radius:30px; padding:14px clamp(18px,5vw,30px);">Falar no WhatsApp</a>
           </div>
         </div>
       </div>
 
-      <div style="padding:70px 28px 40px; max-width:1180px; margin:0 auto;">
+      <div style="padding:clamp(44px,9vw,70px) clamp(16px,5vw,28px) 40px; max-width:1180px; margin:0 auto;">
         <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:26px; flex-wrap:wrap; gap:10px;">
-          <h2 style="font-family:'Fredoka',sans-serif; font-size:34px; color:#17303A; margin:0;">Latinhas Colecionáveis</h2>
+          <h2 style="font-family:'Fredoka',sans-serif; font-size:clamp(26px,6.5vw,34px); color:#17303A; margin:0;">Latinhas Colecionáveis</h2>
           <div style="display:flex; gap:12px; align-items:baseline;">
             <button onClick="{{ goCatalogo }}" style="font-family:'Poppins',sans-serif; font-weight:600; background:none; border:none; color:#C94E02; font-size:15px; cursor:pointer;">ver catálogo completo →</button>
             <a href="{{ ifoodLink }}" target="_blank" style="font-family:'Poppins',sans-serif; font-weight:600; font-size:14px; background:#EA1D2C; color:#fff; border-radius:16px; padding:6px 14px;">Pedir no iFood</a>
@@ -94,7 +103,7 @@
         </div>
       </div>
 
-      <div style="padding:50px 28px; max-width:1180px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:26px;">
+      <div style="padding:50px clamp(16px,5vw,28px); max-width:1180px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr)); gap:26px;">
         <div onClick="{{ goBarris }}" style="cursor:pointer; background:#F2670A; border:3px solid #17303A; border-radius:20px; padding:30px; color:#fff; box-shadow:6px 6px 0 #17303A;">
           <img src="uploads/pasted-1786469319358-0.png" alt="Barril" style="width:56px; height:auto;">
           <div style="font-family:'Fredoka',sans-serif; font-size:24px; font-weight:600; margin-top:8px;">Chopp para Eventos</div>
@@ -122,10 +131,10 @@
 
   <!-- CATALOGO -->
   <sc-if value="{{ isCatalogo }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Catálogo" style="padding:60px 28px; max-width:1180px; margin:0 auto;">
+    <div data-screen-label="Catálogo" style="padding:clamp(36px,8vw,60px) clamp(16px,5vw,28px); max-width:1180px; margin:0 auto;">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:20px; flex-wrap:wrap;">
         <div>
-          <h1 style="font-family:'Fredoka',sans-serif; font-size:42px; margin:0 0 6px;">Catálogo de Bebidas</h1>
+          <h1 style="font-family:'Fredoka',sans-serif; font-size:clamp(28px,7vw,42px); margin:0 0 6px;">Catálogo de Bebidas</h1>
           <p style="font-size:16px; color:#3B5560; max-width:600px;">Cada latinha tem uma arte, um estilo e uma personalidade. Confira as fichas técnicas.</p>
         </div>
         <a href="{{ ifoodLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:15px; background:#EA1D2C; color:#fff; border:3px solid #17303A; border-radius:24px; padding:10px 22px; white-space:nowrap;">Pedir no iFood</a>
@@ -135,7 +144,7 @@
           <button onClick="{{ chip.select }}" style="font-family:'Poppins',sans-serif; font-weight:600; font-size:14px; border:2px solid #17303A; border-radius:20px; padding:8px 18px; cursor:pointer; background:{{ chip.bg }}; color:{{ chip.color }};">{{ chip.label }}</button>
         </sc-for>
       </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:26px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:26px;">
         <sc-for list="{{ filteredProducts }}" as="p" hint-placeholder-count="6">
           <div style="background:#fff; border:3px solid #17303A; border-radius:20px; overflow:hidden; box-shadow:6px 6px 0 #17303A; display:flex; flex-direction:column;">
             <sc-if value="{{ p.image }}" hint-placeholder-val="{{ false }}">
@@ -179,7 +188,7 @@
       <div style="width:100%;">
         <img src="uploads/pasted-1786471545097-0.png" alt="Barris & Eventos - Chopp Eden Beer para seu evento" style="width:100%; display:block; object-fit:cover;">
       </div>
-      <div style="max-width:1000px; margin:0 auto; padding:50px 28px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:22px;">
+      <div style="max-width:1000px; margin:0 auto; padding:50px clamp(16px,5vw,28px); display:grid; grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr)); gap:22px;">
         <sc-for list="{{ barrels }}" as="b" hint-placeholder-count="3">
           <div style="background:#fff; border:3px solid #17303A; border-radius:20px; padding:26px; text-align:center; box-shadow:6px 6px 0 #17303A;">
             <img src="uploads/pasted-1786469319358-0.png" alt="Barril" style="width:58px; height:auto;">
@@ -190,16 +199,16 @@
           </div>
         </sc-for>
       </div>
-      <div style="max-width:900px; margin:0 auto; padding:0 28px 60px; text-align:center;">
-        <div style="background:#17303A; color:#fff; border-radius:20px; padding:34px; display:flex; flex-wrap:wrap; gap:28px; justify-content:space-between; align-items:center;">
+      <div style="max-width:900px; margin:0 auto; padding:0 clamp(16px,5vw,28px) 60px; text-align:center;">
+        <div style="background:#17303A; color:#fff; border-radius:20px; padding:clamp(20px,5vw,34px); display:flex; flex-wrap:wrap; gap:24px; justify-content:space-between; align-items:center;">
           <div style="text-align:left;">
             <div style="font-family:'Fredoka',sans-serif; font-size:20px; color:#FFD400;">Horários de retirada / entrega</div>
             <p style="font-size:15px; margin:6px 0 0;">Qui a Sex – 18h às 21h<br>Sábado – 10h às 17h</p>
             <p style="font-size:15px; margin:10px 0 0;">📍 Rua Siqueira Campos, 924 – Centro, Birigui/SP</p>
           </div>
           <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <a href="{{ waLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:17px; background:#F2670A; color:#fff; border:3px solid #fff; border-radius:30px; padding:14px 30px; white-space:nowrap;">Reservar meu Chopp</a>
-            <a href="{{ ifoodLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:17px; background:#EA1D2C; color:#fff; border:3px solid #fff; border-radius:30px; padding:14px 30px; white-space:nowrap;">Pedir no iFood</a>
+            <a href="{{ waLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:clamp(15px,3.6vw,17px); background:#F2670A; color:#fff; border:3px solid #fff; border-radius:30px; padding:14px clamp(18px,5vw,30px); white-space:nowrap;">Reservar meu Chopp</a>
+            <a href="{{ ifoodLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:clamp(15px,3.6vw,17px); background:#EA1D2C; color:#fff; border:3px solid #fff; border-radius:30px; padding:14px clamp(18px,5vw,30px); white-space:nowrap;">Pedir no iFood</a>
           </div>
         </div>
       </div>
@@ -208,10 +217,10 @@
 
   <!-- GROWLERS -->
   <sc-if value="{{ isGrowlers }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Growlers" style="max-width:1100px; margin:0 auto; padding:60px 28px;">
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:40px; align-items:center;">
+    <div data-screen-label="Growlers" style="max-width:1100px; margin:0 auto; padding:clamp(36px,8vw,60px) clamp(16px,5vw,28px);">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); gap:clamp(24px,5vw,40px); align-items:center;">
         <div>
-          <h1 style="font-family:'Fredoka',sans-serif; font-size:40px; margin:0 0 14px;">Growlers de 1 Litro</h1>
+          <h1 style="font-family:'Fredoka',sans-serif; font-size:clamp(28px,7vw,40px); margin:0 0 14px;">Growlers de 1 Litro</h1>
           <p style="font-size:16px; line-height:1.7; color:#3B5560;">Leve o chopp Eden Beer para casa fresquinho, direto do barril. Os growlers de 1L vêm com a mesma arte psicodélica das latinhas e podem ser reabastecidos sempre que você voltar.</p>
           <a href="{{ waLink }}" target="_blank" style="display:inline-block; margin-top:18px; font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; background:#E63888; color:#fff; border:3px solid #17303A; border-radius:30px; padding:12px 26px;">Pedir meu Growler</a>
         </div>
@@ -219,8 +228,8 @@
           <img src="uploads/pasted-1786470555223-0.png" alt="Growlers Eden Beer" style="width:100%; display:block;">
         </div>
       </div>
-      <h2 style="font-family:'Fredoka',sans-serif; font-size:30px; margin:56px 0 26px;">Catálogo de Growlers</h2>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:26px;">
+      <h2 style="font-family:'Fredoka',sans-serif; font-size:clamp(24px,6vw,30px); margin:56px 0 26px;">Catálogo de Growlers</h2>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:26px;">
         <sc-for list="{{ growlers }}" as="g" hint-placeholder-count="6">
           <div style="background:#fff; border:3px solid #17303A; border-radius:20px; overflow:hidden; box-shadow:6px 6px 0 #17303A; display:flex; flex-direction:column;">
             <img src="{{ g.image }}" alt="{{ g.name }}" style="width:100%; height:260px; object-fit:cover; object-position:center 25%;">
@@ -241,14 +250,14 @@
 
   <!-- HISTORIA -->
   <sc-if value="{{ isHistoria }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Nossa História" style="max-width:900px; margin:0 auto; padding:60px 28px;">
-      <h1 style="font-family:'Fredoka',sans-serif; font-size:40px; margin:0 0 10px;">Nossa História</h1>
+    <div data-screen-label="Nossa História" style="max-width:900px; margin:0 auto; padding:clamp(36px,8vw,60px) clamp(16px,5vw,28px);">
+      <h1 style="font-family:'Fredoka',sans-serif; font-size:clamp(28px,7vw,40px); margin:0 0 10px;">Nossa História</h1>
       <p style="font-size:16px; color:#3B5560; margin-bottom:40px;">De um sonho de família a uma cervejaria em mais de 30 cidades.</p>
       <div style="display:flex; flex-direction:column; gap:0;">
         <sc-for list="{{ timeline }}" as="t" hint-placeholder-count="5">
-          <div style="display:grid; grid-template-columns:110px 1fr; gap:20px;">
-            <div style="text-align:right; font-family:'Fredoka',sans-serif; font-size:18px; color:#F2670A; padding-top:3px; line-height:1.3;">{{ t.year }}</div>
-            <div style="border-left:{{ t.isLast }} 3px solid #17303A; padding:0 0 {{ t.gapBottom }} 22px; position:relative;">
+          <div style="display:grid; grid-template-columns:clamp(88px,16vw,110px) 1fr; gap:clamp(10px,3vw,20px);">
+            <div style="text-align:right; font-family:'Fredoka',sans-serif; font-size:clamp(15px,3.8vw,18px); color:#F2670A; padding-top:3px; line-height:1.3; overflow-wrap:anywhere;">{{ t.year }}</div>
+            <div style="border-left:{{ t.isLast }} 3px solid #17303A; padding:0 0 {{ t.gapBottom }} clamp(14px,4vw,22px); position:relative;">
               <div style="position:absolute; left:-9px; top:3px; width:15px; height:15px; border-radius:50%; background:#17B4CE; border:3px solid #17303A;"></div>
               <div style="font-family:'Fredoka',sans-serif; font-size:19px; margin-bottom:4px;">{{ t.title }}</div>
               <p style="font-size:15px; line-height:1.65; color:#3B5560; margin:0;">{{ t.text }}</p>
@@ -261,11 +270,11 @@
 
   <!-- ONDE ENCONTRAR -->
   <sc-if value="{{ isOnde }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Onde Encontrar" style="max-width:1000px; margin:0 auto; padding:60px 28px;">
-      <h1 style="font-family:'Fredoka',sans-serif; font-size:40px; margin:0 0 10px;">Onde Encontrar a Eden Beer</h1>
+    <div data-screen-label="Onde Encontrar" style="max-width:1000px; margin:0 auto; padding:clamp(36px,8vw,60px) clamp(16px,5vw,28px);">
+      <h1 style="font-family:'Fredoka',sans-serif; font-size:clamp(27px,6.6vw,40px); margin:0 0 10px;">Onde Encontrar a Eden Beer</h1>
       <p style="font-size:16px; color:#3B5560; max-width:640px;">A Eden Beer nasceu em Maringá (PR) e hoje está presente em mais de 30 cidades do Brasil. Birigui é uma das nossas casas.</p>
-      <div style="margin-top:34px; background:#17B4CE; color:#fff; border:3px solid #17303A; border-radius:20px; padding:34px; box-shadow:6px 6px 0 #17303A;">
-        <div style="font-family:'Fredoka',sans-serif; font-size:26px; color:#FFD400;">📍 Eden Beer Birigui</div>
+      <div style="margin-top:34px; background:#17B4CE; color:#fff; border:3px solid #17303A; border-radius:20px; padding:clamp(20px,5vw,34px); box-shadow:6px 6px 0 #17303A;">
+        <div style="font-family:'Fredoka',sans-serif; font-size:clamp(21px,5.2vw,26px); color:#FFD400;">📍 Eden Beer Birigui</div>
         <p style="font-size:16px; margin:10px 0 0;">Rua Siqueira Campos, 924 – Centro, Birigui/SP</p>
         <p style="font-size:15px; opacity:0.9; margin:6px 0 0;">Qui a Sex – 18h às 21h · Sábado – 10h às 17h</p>
       </div>
@@ -278,21 +287,21 @@
 
   <!-- REVENDA / CONTATO -->
   <sc-if value="{{ isRevenda }}" hint-placeholder-val="{{ false }}">
-    <div data-screen-label="Revenda e Contato" style="max-width:1100px; margin:0 auto; padding:60px 28px;">
-      <h1 style="font-family:'Fredoka',sans-serif; font-size:40px; margin:0 0 10px;">Seja Revendedor / Contato</h1>
+    <div data-screen-label="Revenda e Contato" style="max-width:1100px; margin:0 auto; padding:clamp(36px,8vw,60px) clamp(16px,5vw,28px);">
+      <h1 style="font-family:'Fredoka',sans-serif; font-size:clamp(27px,6.6vw,40px); margin:0 0 10px;">Seja Revendedor / Contato</h1>
       <p style="font-size:16px; color:#3B5560; max-width:640px; margin-bottom:36px;">Adegas e mercados interessados em revender a Eden Beer, ou dúvidas em geral — fale com a gente.</p>
-      <div style="display:grid; grid-template-columns:1.1fr 0.9fr; gap:36px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); gap:clamp(24px,4vw,36px);">
         <div>
           <sc-if value="{{ revendaSent }}" hint-placeholder-val="{{ false }}">
             <div style="background:#25A15A; color:#fff; border:3px solid #17303A; border-radius:20px; padding:30px; font-family:'Fredoka',sans-serif; font-size:19px;">✅ Recebemos seu contato! Vamos te responder em breve.</div>
           </sc-if>
           <sc-if value="{{ revendaNotSent }}" hint-placeholder-val="{{ true }}">
-            <form onSubmit="{{ submitRevenda }}" style="display:flex; flex-direction:column; gap:14px; background:#fff; border:3px solid #17303A; border-radius:20px; padding:28px; box-shadow:6px 6px 0 #17303A;">
-              <input required="{{ true }}" value="{{ formNome }}" onChange="{{ setNome }}" placeholder="Seu nome" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:15px;">
-              <input required="{{ true }}" value="{{ formLoja }}" onChange="{{ setLoja }}" placeholder="Nome do estabelecimento" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:15px;">
-              <input required="{{ true }}" value="{{ formCidade }}" onChange="{{ setCidade }}" placeholder="Cidade" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:15px;">
-              <input required="{{ true }}" value="{{ formWhats }}" onChange="{{ setWhats }}" placeholder="WhatsApp" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:15px;">
-              <textarea rows="4" value="{{ formMsg }}" onChange="{{ setMsg }}" placeholder="Mensagem (opcional)" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:15px; resize:vertical;"></textarea>
+            <form onSubmit="{{ submitRevenda }}" style="display:flex; flex-direction:column; gap:14px; background:#fff; border:3px solid #17303A; border-radius:20px; padding:clamp(20px,5vw,28px); box-shadow:6px 6px 0 #17303A;">
+              <input required="{{ true }}" value="{{ formNome }}" onChange="{{ setNome }}" placeholder="Seu nome" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:16px;">
+              <input required="{{ true }}" value="{{ formLoja }}" onChange="{{ setLoja }}" placeholder="Nome do estabelecimento" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:16px;">
+              <input required="{{ true }}" value="{{ formCidade }}" onChange="{{ setCidade }}" placeholder="Cidade" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:16px;">
+              <input required="{{ true }}" value="{{ formWhats }}" onChange="{{ setWhats }}" placeholder="WhatsApp" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:16px;">
+              <textarea rows="4" value="{{ formMsg }}" onChange="{{ setMsg }}" placeholder="Mensagem (opcional)" style="padding:12px 14px; border:2px solid #17303A; border-radius:10px; font-size:16px; resize:vertical;"></textarea>
               <button type="submit" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; background:#F2670A; color:#fff; border:3px solid #17303A; border-radius:30px; padding:13px; cursor:pointer;">Quero ser revendedor</button>
             </form>
           </sc-if>
@@ -317,7 +326,7 @@
   </sc-if>
 
   <!-- FOOTER -->
-  <div style="background:#17303A; color:#fff; padding:36px 28px; text-align:center; border-top:4px solid #FFD400;">
+  <div style="background:#17303A; color:#fff; padding:36px clamp(16px,5vw,28px) calc(36px + env(safe-area-inset-bottom)); text-align:center; border-top:4px solid #FFD400;">
     <img src="uploads/574192651_18549776617018519_7126564038112895348_n.jpg" alt="Eden Beer" style="width:56px; height:56px; border-radius:50%; margin-bottom:10px;">
     <div style="font-family:'Fredoka',sans-serif; font-size:20px; color:#17B4CE;">EDEN <span style="color:#F2670A;">BEER</span></div>
     <p style="font-size:13px; opacity:0.75; margin-top:8px;">Cerveja artesanal · Maringá/PR · Presente em mais de 30 cidades do Brasil</p>
