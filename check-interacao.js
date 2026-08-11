@@ -145,6 +145,32 @@ async function testaDicaMenu(p, largura) {
   await p.waitForTimeout(200);
 }
 
+// O iFood ficou so no botao do hero da home; produtos e demais telas nao tem.
+async function testaIfood(p) {
+  console.log('\nlink do iFood');
+  const esperado = 'https://www.ifood.com.br/delivery/birigui-sp/eden-beer-centro/f7ad8c52-b7cf-4595-bab6-0c76ee8e99af?UTM_Medium=share';
+  await p.getByRole('button', { name: 'Início', exact: true }).first().click();
+  await p.waitForTimeout(250);
+
+  const naHome = await p.$$eval('a[href*="ifood"]', (as) => as.map((a) => a.href));
+  A(naHome.length === 1, `home tem exatamente 1 link (achou ${naHome.length})`);
+  A(naHome[0] === esperado, 'aponta para a URL da loja, com o UTM');
+
+  for (const tela of ['Catálogo', 'Barris & Eventos', 'Growlers', 'Nossa História', 'Onde Encontrar', 'Revenda']) {
+    await p.getByRole('button', { name: tela, exact: true }).first().click();
+    await p.waitForTimeout(250);
+    A(await p.locator('a[href*="ifood"]').count() === 0, `${tela}: nenhum link`);
+  }
+
+  await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
+  await p.waitForTimeout(250);
+  await cardPorNome(p, 'The Sea').click();
+  await p.waitForTimeout(350);
+  A(await p.locator('a[href*="ifood"]').count() === 0, 'modal de produto: nenhum link');
+  await p.locator('button[aria-label="Fechar"]').click();
+  await p.waitForTimeout(200);
+}
+
 async function testaWhatsApp(p) {
   console.log('\nlinks de whatsapp');
   const esperado = 'https://wa.me/5518996254970'; // wa.me so aceita digitos
@@ -260,6 +286,7 @@ async function testaToque(p) {
     await testaDicaMenu(p, largura);
     await testaModal(p, largura);
     if (largura === 1280) {
+      await testaIfood(p);
       await testaWhatsApp(p);
       await testaCarrossel(p);
     }
