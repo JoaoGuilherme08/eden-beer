@@ -27,11 +27,13 @@
     .eb-carousel img { -webkit-user-drag: none; user-drag: none; }
     .eb-navbtns { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .eb-navbtns::-webkit-scrollbar { display: none; }
-    /* Setinha indicando que a faixa de atalhos rola para o lado. So no mobile,
-       onde a faixa nao cabe inteira. Fica na mesma celula da grid que os botoes,
-       sobreposta a direita — sem pointer-events para nao roubar o clique deles. */
+    /* Setinhas indicando que a faixa de atalhos rola para o lado. So no mobile,
+       onde a faixa nao cabe inteira. Ficam na mesma celula da grid que os botoes,
+       sobrepostas nas bordas — sem pointer-events para nao roubar o clique deles.
+       data-esq / data-dir sao ligados pela logica conforme a posicao do scroll. */
     .eb-navhint { display: none; }
-    @keyframes edenCutuca { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+    @keyframes edenCutucaDir { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+    @keyframes edenCutucaEsq { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-4px); } }
     /* Nav vira 2 linhas (logo em cima, atalhos rolando embaixo) — unico ponto que
        precisa de breakpoint; o resto do site e fluido via clamp()/auto-fit. */
     @media (max-width: 720px) {
@@ -39,14 +41,23 @@
       .eb-logo { grid-area: 1 / 1; justify-self: center !important; }
       .eb-logo > div { width: 60px !important; height: 60px !important; }
       .eb-navbtns { grid-area: 2 / 1; }
+      .eb-nav[data-esq] .eb-navhint-esq,
+      .eb-nav[data-dir] .eb-navhint-dir { display: flex; }
       .eb-navhint {
         grid-area: 2 / 1;
-        display: flex; align-items: center; justify-content: flex-end;
-        justify-self: end; align-self: stretch;
-        width: 44px; padding-right: 2px; pointer-events: none;
+        align-items: center; align-self: stretch;
+        width: 44px; pointer-events: none;
+      }
+      .eb-navhint-dir {
+        justify-self: end; justify-content: flex-end; padding-right: 2px;
         background: linear-gradient(to right, rgba(251,243,231,0), #FBF3E7 65%);
       }
-      .eb-navhint svg { animation: edenCutuca 1.5s ease-in-out infinite; }
+      .eb-navhint-esq {
+        justify-self: start; justify-content: flex-start; padding-left: 2px;
+        background: linear-gradient(to left, rgba(251,243,231,0), #FBF3E7 65%);
+      }
+      .eb-navhint-dir svg { animation: edenCutucaDir 1.5s ease-in-out infinite; }
+      .eb-navhint-esq svg { animation: edenCutucaEsq 1.5s ease-in-out infinite; }
     }
     @media (prefers-reduced-motion: reduce) {
       .eb-navhint svg { animation: none; }
@@ -69,7 +80,10 @@
         <button onClick="{{ item.go }}" style="font-family:'Poppins',sans-serif; font-weight:600; font-size:12px; border:1.5px solid #17303A; border-radius:16px; padding:6px 9px; cursor:pointer; background:{{ item.bg }}; color:{{ item.color }}; white-space:nowrap; flex:0 0 auto;">{{ item.label }}</button>
       </sc-for>
     </div>
-    <div class="eb-navhint" aria-hidden="true">
+    <div class="eb-navhint eb-navhint-esq" aria-hidden="true">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17303A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 5 8 12 15 19"></polyline></svg>
+    </div>
+    <div class="eb-navhint eb-navhint-dir" aria-hidden="true">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#17303A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 5 16 12 9 19"></polyline></svg>
     </div>
   </div>
@@ -438,9 +452,48 @@ class Component extends DCLogic {
 
   go(page) { this.setState({ page, selected: null }); }
 
-  componentDidMount() { this.montaCarrossel(); }
-  componentDidUpdate() { this.montaCarrossel(); }
-  componentWillUnmount() { this.desmontaCarrossel(); }
+  componentDidMount() { this.montaCarrossel(); this.montaDicasMenu(); }
+  componentDidUpdate() { this.montaCarrossel(); this.montaDicasMenu(); }
+  componentWillUnmount() { this.desmontaCarrossel(); this.desmontaDicasMenu(); }
+
+  desmontaDicasMenu() {
+    if (this.dicas) this.dicas.limpa();
+    this.dicas = null;
+  }
+
+  // Liga data-esq/data-dir na nav conforme sobrar conteudo para cada lado, para
+  // o CSS mostrar so a seta que faz sentido. Atributos imperativos de proposito:
+  // nao estao no template, entao o React nao tem opiniao sobre eles e nao os
+  // sobrescreve a cada render.
+  montaDicasMenu() {
+    const faixa = document.querySelector('.eb-navbtns');
+    if (this.dicas && this.dicas.faixa === faixa) { this.dicas.atualiza(); return; }
+    this.desmontaDicasMenu();
+    if (!faixa) return;
+
+    const nav = faixa.closest('.eb-nav');
+    const atualiza = () => {
+      const max = faixa.scrollWidth - faixa.clientWidth;
+      // 4px de folga: subpixel nunca zera exato nos extremos
+      nav.toggleAttribute('data-esq', faixa.scrollLeft > 4);
+      nav.toggleAttribute('data-dir', faixa.scrollLeft < max - 4);
+    };
+
+    atualiza();
+    // As fontes mudam a largura dos botoes ao carregar, movendo os extremos.
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(atualiza);
+    faixa.addEventListener('scroll', atualiza, { passive: true });
+    window.addEventListener('resize', atualiza);
+
+    this.dicas = {
+      faixa,
+      atualiza,
+      limpa() {
+        faixa.removeEventListener('scroll', atualiza);
+        window.removeEventListener('resize', atualiza);
+      },
+    };
+  }
 
   desmontaCarrossel() {
     if (this.carrossel) this.carrossel.limpa();

@@ -88,32 +88,59 @@ async function testaModal(p, largura) {
   A(await fechado(p), 'navega normal depois de fechar');
 }
 
-// A setinha fica por cima da faixa de atalhos: o risco e roubar o clique deles.
+// As setas ficam por cima da faixa de atalhos: o risco e roubar o clique deles.
 async function testaDicaMenu(p, largura) {
-  console.log(`\nsetinha do menu @ ${largura}px`);
-  const mobile = largura <= 720;
-  const dica = p.locator('.eb-navhint');
+  console.log(`\nsetas do menu @ ${largura}px`);
+  const vis = async () => ({
+    esq: await p.locator('.eb-navhint-esq').isVisible(),
+    dir: await p.locator('.eb-navhint-dir').isVisible(),
+  });
+  const rola = async (x) => {
+    await p.$eval('.eb-navbtns', (e, v) => { e.scrollLeft = v; }, x);
+    await p.waitForTimeout(250);
+  };
 
-  if (!mobile) {
-    A(!(await dica.isVisible()), 'escondida no desktop');
+  if (largura > 720) {
+    const v = await vis();
+    A(!v.esq && !v.dir, 'nenhuma seta no desktop');
     return;
   }
 
-  A(await dica.isVisible(), 'aparece no mobile');
-  const [d, faixa] = await Promise.all([dica.boundingBox(), p.locator('.eb-navbtns').boundingBox()]);
-  A(Math.abs(d.x + d.width - (faixa.x + faixa.width)) < 2, 'colada na borda direita da faixa');
-  A(d.y >= faixa.y - 2 && d.y + d.height <= faixa.y + faixa.height + 2, 'na mesma linha dos botoes');
-  A(d.x + d.width <= largura + 1, 'nao vaza a viewport');
+  const max = await p.$eval('.eb-navbtns', (e) => e.scrollWidth - e.clientWidth);
+  A(max > 20, `a faixa realmente rola (${max}px de sobra)`);
 
-  const dentro = await p.evaluate(([x, y]) => !!document.elementFromPoint(x, y).closest('.eb-navhint'),
-    [d.x + d.width / 2, d.y + d.height / 2]);
-  A(!dentro, 'nao intercepta o ponteiro');
+  let v = await vis();
+  A(!v.esq && v.dir, 'no inicio: so a seta da direita');
+  await rola(Math.round(max / 2));
+  v = await vis();
+  A(v.esq && v.dir, 'no meio: as duas');
+  await rola(max);
+  v = await vis();
+  A(v.esq && !v.dir, 'no fim: so a seta da esquerda');
+  await rola(0);
+  v = await vis();
+  A(!v.esq && v.dir, 'de volta ao inicio: so a da direita');
+
+  await rola(Math.round(max / 2));
+  for (const lado of ['esq', 'dir']) {
+    const d = await p.locator('.eb-navhint-' + lado).boundingBox();
+    const faixa = await p.locator('.eb-navbtns').boundingBox();
+    A(d.y >= faixa.y - 2 && d.y + d.height <= faixa.y + faixa.height + 2, `seta ${lado} na mesma linha dos botoes`);
+    A(d.x >= -1 && d.x + d.width <= largura + 1, `seta ${lado} nao vaza a viewport`);
+    const dentro = await p.evaluate(([x, y]) => !!document.elementFromPoint(x, y).closest('.eb-navhint'),
+      [d.x + d.width / 2, d.y + d.height / 2]);
+    A(!dentro, `seta ${lado} nao intercepta o ponteiro`);
+  }
 
   for (const nome of ['Início', 'Catálogo', 'Barris & Eventos', 'Growlers', 'Nossa História', 'Onde Encontrar', 'Revenda']) {
     await p.getByRole('button', { name: nome, exact: true }).first().click({ timeout: 8000 });
     await p.waitForTimeout(100);
   }
-  A(true, 'os 7 atalhos continuam clicaveis com ela por cima');
+  A(true, 'os 7 atalhos continuam clicaveis com elas por cima');
+
+  await rola(max);
+  v = await vis();
+  A(v.esq && !v.dir, 'estado correto depois de navegar pelas telas');
   await p.getByRole('button', { name: 'Início', exact: true }).first().click();
   await p.waitForTimeout(200);
 }
