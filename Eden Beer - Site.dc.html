@@ -139,14 +139,9 @@
         </div>
         <a href="{{ ifoodLink }}" target="_blank" style="font-family:'Fredoka',sans-serif; font-weight:600; font-size:15px; background:#EA1D2C; color:#fff; border:3px solid #17303A; border-radius:24px; padding:10px 22px; white-space:nowrap;">Pedir no iFood</a>
       </div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap; margin:26px 0 34px;">
-        <sc-for list="{{ chips }}" as="chip" hint-placeholder-count="6">
-          <button onClick="{{ chip.select }}" style="font-family:'Poppins',sans-serif; font-weight:600; font-size:14px; border:2px solid #17303A; border-radius:20px; padding:8px 18px; cursor:pointer; background:{{ chip.bg }}; color:{{ chip.color }};">{{ chip.label }}</button>
-        </sc-for>
-      </div>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:26px;">
-        <sc-for list="{{ filteredProducts }}" as="p" hint-placeholder-count="6">
-          <div style="background:#fff; border:3px solid #17303A; border-radius:20px; overflow:hidden; box-shadow:6px 6px 0 #17303A; display:flex; flex-direction:column;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:26px; margin-top:34px;">
+        <sc-for list="{{ products }}" as="p" hint-placeholder-count="6">
+          <button onClick="{{ p.open }}" style="text-align:left; font-family:'Poppins',sans-serif; padding:0; background:#fff; border:3px solid #17303A; border-radius:20px; overflow:hidden; box-shadow:6px 6px 0 #17303A; display:flex; flex-direction:column; cursor:pointer; color:#17303A;">
             <sc-if value="{{ p.image }}" hint-placeholder-val="{{ false }}">
               <img src="{{ p.image }}" alt="{{ p.name }}" style="width:100%; height:260px; object-fit:cover; object-position:center 25%;">
             </sc-if>
@@ -155,28 +150,12 @@
                 <span style="font-family:monospace; font-size:12px; color:#8a8072;">[ foto da lata — {{ p.name }} ]</span>
               </div>
             </sc-if>
-            <div style="padding:18px 20px 22px; flex:1; display:flex; flex-direction:column;">
+            <div style="padding:16px 20px 18px; width:100%;">
               <div style="font-family:'Fredoka',sans-serif; font-size:22px; font-weight:600;">{{ p.name }}</div>
               <div style="font-size:13px; font-weight:600; color:{{ p.accent }}; margin-top:2px;">{{ p.style }}</div>
-              <p style="font-size:14px; line-height:1.55; color:#3B5560; margin:12px 0;">{{ p.description }}</p>
-              <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:auto;">
-                <sc-for list="{{ p.tags }}" as="tag" hint-placeholder-count="3">
-                  <span style="font-size:11px; font-weight:600; background:#FBF3E7; border:1.5px solid #17303A; border-radius:12px; padding:3px 10px;">{{ tag }}</span>
-                </sc-for>
-              </div>
-              <div style="display:flex; gap:16px; margin-top:14px; padding-top:12px; border-top:2px dashed #d8cfbe;">
-                <sc-if value="{{ p.abv }}" hint-placeholder-val="{{ false }}">
-                  <div><div style="font-size:11px; color:#8a8072; font-weight:600;">ABV</div><div style="font-family:'Fredoka',sans-serif; font-size:17px;">{{ p.abv }}</div></div>
-                </sc-if>
-                <sc-if value="{{ p.ibu }}" hint-placeholder-val="{{ false }}">
-                  <div><div style="font-size:11px; color:#8a8072; font-weight:600;">IBU</div><div style="font-family:'Fredoka',sans-serif; font-size:17px;">{{ p.ibu }}</div></div>
-                </sc-if>
-                <sc-if value="{{ p.volume }}" hint-placeholder-val="{{ false }}">
-                  <div><div style="font-size:11px; color:#8a8072; font-weight:600;">VOL.</div><div style="font-family:'Fredoka',sans-serif; font-size:17px;">{{ p.volume }}</div></div>
-                </sc-if>
-              </div>
+              <div style="font-size:12px; font-weight:600; color:#8a8072; margin-top:10px;">ver detalhes →</div>
             </div>
-          </div>
+          </button>
         </sc-for>
       </div>
     </div>
@@ -231,18 +210,14 @@
       <h2 style="font-family:'Fredoka',sans-serif; font-size:clamp(24px,6vw,30px); margin:56px 0 26px;">Catálogo de Growlers</h2>
       <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr)); gap:26px;">
         <sc-for list="{{ growlers }}" as="g" hint-placeholder-count="6">
-          <div style="background:#fff; border:3px solid #17303A; border-radius:20px; overflow:hidden; box-shadow:6px 6px 0 #17303A; display:flex; flex-direction:column;">
+          <button onClick="{{ g.open }}" style="text-align:left; font-family:'Poppins',sans-serif; padding:0; background:#fff; border:3px solid #17303A; border-radius:20px; overflow:hidden; box-shadow:6px 6px 0 #17303A; display:flex; flex-direction:column; cursor:pointer; color:#17303A;">
             <img src="{{ g.image }}" alt="{{ g.name }}" style="width:100%; height:260px; object-fit:cover; object-position:center 25%;">
-            <div style="padding:18px 20px 22px; flex:1; display:flex; flex-direction:column;">
+            <div style="padding:16px 20px 18px; width:100%;">
               <div style="font-family:'Fredoka',sans-serif; font-size:22px; font-weight:600;">{{ g.name }}</div>
               <div style="font-size:13px; font-weight:600; color:{{ g.accent }}; margin-top:2px;">{{ g.style }}</div>
-              <p style="font-size:14px; line-height:1.55; color:#3B5560; margin:12px 0;">{{ g.description }}</p>
-              <div style="display:flex; gap:16px; margin-top:auto; padding-top:12px; border-top:2px dashed #d8cfbe;">
-                <div><div style="font-size:11px; color:#8a8072; font-weight:600;">ABV</div><div style="font-family:'Fredoka',sans-serif; font-size:17px;">{{ g.abv }}</div></div>
-                <div><div style="font-size:11px; color:#8a8072; font-weight:600;">IBU</div><div style="font-family:'Fredoka',sans-serif; font-size:17px;">{{ g.ibu }}</div></div>
-              </div>
+              <div style="font-size:12px; font-weight:600; color:#8a8072; margin-top:10px;">ver detalhes →</div>
             </div>
-          </div>
+          </button>
         </sc-for>
       </div>
     </div>
@@ -325,6 +300,44 @@
     </div>
   </sc-if>
 
+  <!-- MODAL DA CERVEJA (serve catalogo e growlers) -->
+  <sc-if value="{{ sel }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeModal }}" style="position:fixed; inset:0; z-index:100; background:rgba(23,48,58,0.78); display:flex; align-items:flex-start; justify-content:center; padding:clamp(12px,4vw,40px); overflow-y:auto;">
+      <div onClick="{{ stopPropagation }}" style="position:relative; width:100%; max-width:520px; margin:auto; background:#fff; border:3px solid #17303A; border-radius:20px; box-shadow:8px 8px 0 #17303A; overflow:hidden;">
+        <button onClick="{{ closeModal }}" aria-label="Fechar" style="position:absolute; top:12px; right:12px; z-index:2; width:38px; height:38px; border-radius:50%; border:2.5px solid #17303A; background:#FBF3E7; color:#17303A; font-family:'Fredoka',sans-serif; font-size:20px; line-height:1; cursor:pointer;">×</button>
+        <sc-if value="{{ sel.image }}" hint-placeholder-val="{{ false }}">
+          <div style="background:{{ sel.accent }}; padding:18px; display:flex; align-items:center; justify-content:center;">
+            <img src="{{ sel.image }}" alt="{{ sel.name }}" style="max-height:min(52vh,420px); width:auto; max-width:100%; object-fit:contain; border-radius:12px;">
+          </div>
+        </sc-if>
+        <div style="padding:20px clamp(18px,5vw,26px) 26px;">
+          <div style="font-family:'Fredoka',sans-serif; font-size:clamp(24px,6vw,30px); font-weight:600; line-height:1.15;">{{ sel.name }}</div>
+          <div style="font-size:14px; font-weight:600; color:{{ sel.accent }}; margin-top:3px;">{{ sel.style }}</div>
+          <p style="font-size:15px; line-height:1.6; color:#3B5560; margin:14px 0 0;">{{ sel.description }}</p>
+          <sc-if value="{{ sel.tags }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:14px;">
+              <sc-for list="{{ sel.tags }}" as="tag" hint-placeholder-count="3">
+                <span style="font-size:11px; font-weight:600; background:#FBF3E7; border:1.5px solid #17303A; border-radius:12px; padding:3px 10px;">{{ tag }}</span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="display:flex; gap:24px; margin-top:16px; padding-top:14px; border-top:2px dashed #d8cfbe;">
+            <sc-if value="{{ sel.abv }}" hint-placeholder-val="{{ false }}">
+              <div><div style="font-size:11px; color:#8a8072; font-weight:600;">ABV</div><div style="font-family:'Fredoka',sans-serif; font-size:19px;">{{ sel.abv }}</div></div>
+            </sc-if>
+            <sc-if value="{{ sel.ibu }}" hint-placeholder-val="{{ false }}">
+              <div><div style="font-size:11px; color:#8a8072; font-weight:600;">IBU</div><div style="font-family:'Fredoka',sans-serif; font-size:19px;">{{ sel.ibu }}</div></div>
+            </sc-if>
+            <sc-if value="{{ sel.volume }}" hint-placeholder-val="{{ false }}">
+              <div><div style="font-size:11px; color:#8a8072; font-weight:600;">VOL.</div><div style="font-family:'Fredoka',sans-serif; font-size:19px;">{{ sel.volume }}</div></div>
+            </sc-if>
+          </div>
+          <a href="{{ ifoodLink }}" target="_blank" style="display:block; text-align:center; margin-top:20px; font-family:'Fredoka',sans-serif; font-weight:600; font-size:16px; background:#EA1D2C; color:#fff; border:3px solid #17303A; border-radius:30px; padding:12px 24px;">Pedir no iFood</a>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
   <!-- FOOTER -->
   <div style="background:#17303A; color:#fff; padding:36px clamp(16px,5vw,28px) calc(36px + env(safe-area-inset-bottom)); text-align:center; border-top:4px solid #FFD400;">
     <img src="uploads/574192651_18549776617018519_7126564038112895348_n.jpg" alt="Eden Beer" style="width:56px; height:56px; border-radius:50%; margin-bottom:10px;">
@@ -394,12 +407,12 @@ const BARRELS = [
 class Component extends DCLogic {
   state = {
     page: 'home',
-    filter: 'Todas',
+    selected: null,
     formNome: '', formLoja: '', formCidade: '', formWhats: '', formMsg: '',
     revendaSent: false,
   };
 
-  go(page) { this.setState({ page }); }
+  go(page) { this.setState({ page, selected: null }); }
 
   renderVals() {
     const wa = this.props.whatsappNumber || '5518999999999';
@@ -417,13 +430,7 @@ class Component extends DCLogic {
       color: page === key ? '#fff' : '#17303A',
     }));
 
-    const styles = ['Todas', ...Array.from(new Set(PRODUCTS.map(p => p.style)))];
-    const chips = styles.map(s => ({
-      label: s, select: () => this.setState({ filter: s }),
-      bg: this.state.filter === s ? '#17303A' : '#fff',
-      color: this.state.filter === s ? '#fff' : '#17303A',
-    }));
-    const filteredProducts = this.state.filter === 'Todas' ? PRODUCTS : PRODUCTS.filter(p => p.style === this.state.filter);
+    const open = item => () => this.setState({ selected: item });
 
     return {
       navItems,
@@ -444,9 +451,11 @@ class Component extends DCLogic {
       isOnde: page === 'onde',
       isRevenda: page === 'revenda',
       homeCans: PRODUCTS.filter(p => p.image),
-      growlers: GROWLERS,
-      chips,
-      filteredProducts,
+      products: PRODUCTS.map(p => ({ ...p, noImage: !p.image, open: open(p) })),
+      growlers: GROWLERS.map(g => ({ ...g, open: open(g) })),
+      sel: this.state.selected,
+      closeModal: () => this.setState({ selected: null }),
+      stopPropagation: e => e.stopPropagation(),
       barrels: BARRELS,
       showPrices: this.props.showBarrilPrices ?? true,
       timeline: TIMELINE.map((t, i) => ({ ...t, isLast: i === TIMELINE.length - 1 ? '0' : '', gapBottom: i === TIMELINE.length - 1 ? '0' : '34px' })),
