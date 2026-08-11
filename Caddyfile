@@ -1,0 +1,4 @@
+:{$PORT:8080}
+root * /srv
+rewrite / "/Eden Beer - Site.dc.html"
+file_server
