@@ -1,8 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    { "source": "/", "destination": "/Eden Beer - Site.dc.html" }
-  ],
+  "buildCommand": "node build/gerar-dados.mjs",
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/uploads/(.*)",
@@ -10,6 +9,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=604800, stale-while-revalidate=2592000"
+        }
+      ]
+    },
+    {
+      "source": "/data.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }

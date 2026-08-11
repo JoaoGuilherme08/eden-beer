@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Gerado pelo build a partir da API do admin. Sincrono de proposito: o
+     catalogo tem de estar pronto no primeiro render, sem piscar dado velho.
+     Se faltar, as listas embutidas mais abaixo assumem. -->
+<script src="./data.js"></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -383,7 +387,9 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;whatsappNumber&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;+55 18 99625-4970&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contato&quot;},&quot;instagramHandle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;edenbeerbirigui&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contato&quot;},&quot;ifoodUrl&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;https://www.ifood.com.br/delivery/birigui-sp/eden-beer-centro/f7ad8c52-b7cf-4595-bab6-0c76ee8e99af?UTM_Medium=share&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Contato&quot;},&quot;showBarrilPrices&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Barris &amp; Eventos&quot;}}">
 
-const GROWLERS = [
+// As tres listas abaixo sao o fallback: valem quando data.js nao existe
+// (rodando local, ou build sem API). Em producao window.EDEN_DATA vence.
+const GROWLERS = window.EDEN_DATA?.growlers ?? [
   { id: 'g7x1', name: '7x1', style: 'German IPA', accent: '#17B4CE', image: 'uploads/Ifood-20260811T175241Z-1-001/Growler-Ifood-7x1.jpg', description: 'Uma German IPA de dar invejar aos alemães. Sabor e aroma desta cerveja são inesquecíveis, assim como uma bela goleada.', abv: '6,0%', ibu: '60' },
   { id: 'gwikileaks', name: 'Wikileaks', style: 'APA', accent: '#E63888', image: 'uploads/Ifood-20260811T175241Z-1-001/Growler-Ifood-wikileaks.jpg', description: 'APA com aroma e amargor bem destacado. Notas de frutas cítricas, pinus e casca de laranja.', abv: '4,7%', ibu: '30' },
   { id: 'gradha', name: 'Radha', style: 'IPA', accent: '#C94E02', image: 'uploads/Ifood-20260811T175241Z-1-001/Growler-Ifood-radha.jpg', description: 'Notas de café e chocolate, além do sabor cítrico do lúpulo revelam uma cerveja única.', abv: '6,6%', ibu: '50' },
@@ -409,7 +415,7 @@ const GROWLERS = [
   { id: 'glaguna', name: 'Laguna Colorada', style: 'IPA', accent: '#8B5CA8', image: 'uploads/Ifood-20260811T175241Z-1-001/Growler-Ifood-laguna.jpg', description: 'Base maltada caramelo, aroma e sabor provenientes dos lúpulos, limão, menta, laranja e tangerina. Uma cerveja com amargor acentuado sem deixar de ser saborosa, aromática, e ainda assim com alta drinkability.', abv: '7,5%', ibu: '70' },
 ];
 
-const PRODUCTS = [
+const PRODUCTS = window.EDEN_DATA?.latas ?? [
   { id: 'thesea', name: 'The Sea', style: 'Session IPA', accent: '#17B4CE', image: 'uploads/650fb4b0-8c84-458d-bea1-080d51ff0c5d.jpeg', description: 'Feita com lúpulos em flor, leve e refrescante — a lata que traz a praia pra sua mão.', tags: ['leve', 'refrescante', 'cítrica'], abv: '4.5%', ibu: '20', volume: null },
   { id: 'ife', name: 'IFE', style: 'Extra Lager', accent: '#0E93A8', image: 'uploads/77cad03a-f895-41e2-b336-e55ba53f922e.jpeg', description: 'Lager extra, fácil de beber, pensada para o dia a dia sem perder personalidade.', tags: ['leve', 'refrescante'], abv: null, ibu: null, volume: null },
   { id: 'redale', name: 'Red Ale', style: 'Red Ale', accent: '#C94E02', image: 'uploads/f7195980-4653-49ae-b1de-3843913b2182.jpeg', description: 'Cerveja puro malte, corpo amadeirado e um toque adocicado no final.', tags: ['maltada', 'doce', 'amber'], abv: null, ibu: null, volume: null },
@@ -431,7 +437,7 @@ const TIMELINE = [
   { year: 'Hoje', title: 'Mais de 30 cidades', text: 'A marca foca em alta drinkability, misturando estilos tradicionais e ingredientes criativos como melancia, zimbro e hibisco, e está presente em mais de 30 cidades do Brasil — incluindo Birigui/SP.' },
 ];
 
-const BARRELS = [
+const BARRELS = window.EDEN_DATA?.barris ?? [
   { size: '20L', price: 'R$ 280,00' },
   { size: '30L', price: 'R$ 420,00' },
   { size: '50L', price: 'R$ 700,00' },
@@ -603,11 +609,15 @@ class Component extends DCLogic {
   }
 
   renderVals() {
-    // wa.me so aceita digitos: o numero e escrito formatado ("+55 18 99625-4970")
-    // na prop, entao tira tudo que nao for digito antes de montar o link.
-    const wa = String(this.props.whatsappNumber || '+55 18 99625-4970').replace(/\D/g, '');
-    const ig = this.props.instagramHandle || 'edenbeer';
-    const ifood = this.props.ifoodUrl || 'https://www.ifood.com.br/delivery/birigui-sp/eden-beer-centro/f7ad8c52-b7cf-4595-bab6-0c76ee8e99af?UTM_Medium=share';
+    // Ordem: o que o admin publicou vence; depois a prop do editor; por ultimo
+    // o valor embutido. Assim o editor visual continua funcionando como sempre
+    // quando nao ha snapshot.
+    const cfg = window.EDEN_DATA?.config ?? {};
+    // wa.me so aceita digitos: o numero e escrito formatado ("+55 18 99625-4970"),
+    // entao tira tudo que nao for digito antes de montar o link.
+    const wa = String(cfg.whatsappNumber || this.props.whatsappNumber || '+55 18 99625-4970').replace(/\D/g, '');
+    const ig = cfg.instagramHandle || this.props.instagramHandle || 'edenbeer';
+    const ifood = cfg.ifoodUrl || this.props.ifoodUrl || 'https://www.ifood.com.br/delivery/birigui-sp/eden-beer-centro/f7ad8c52-b7cf-4595-bab6-0c76ee8e99af?UTM_Medium=share';
     const page = this.state.page;
 
     const navDefs = [
@@ -656,7 +666,7 @@ class Component extends DCLogic {
       closeModal: () => this.setState({ selected: null }),
       stopPropagation: e => e.stopPropagation(),
       barrels: BARRELS,
-      showPrices: this.props.showBarrilPrices ?? true,
+      showPrices: cfg.showBarrilPrices ?? this.props.showBarrilPrices ?? true,
       timeline: TIMELINE.map((t, i) => ({ ...t, isLast: i === TIMELINE.length - 1 ? '0' : '', gapBottom: i === TIMELINE.length - 1 ? '0' : '34px' })),
       formNome: this.state.formNome, setNome: e => this.setState({ formNome: e.target.value }),
       formLoja: this.state.formLoja, setLoja: e => this.setState({ formLoja: e.target.value }),

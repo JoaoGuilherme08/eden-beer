@@ -1,0 +1,9 @@
+node_modules/
+dist/
+
+# artefatos gerados pelo build da Vercel
+/index.html
+/data.js
+
+# ambiente local
+.env.local
