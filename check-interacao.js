@@ -59,13 +59,13 @@ async function testaModal(p, largura) {
   await p.waitForTimeout(250);
   A(await fechado(p), 'clique no fundo fecha');
 
-  await p.getByRole('button', { name: 'Growlers', exact: true }).first().click();
+  await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
   await p.waitForTimeout(300);
-  await cardPorNome(p, 'Wikileaks').click();
+  await cardPorNome(p, '7x1').click();
   await p.waitForTimeout(300);
   t = await corpoModal(p).textContent();
-  A(t.includes('Wikileaks') && t.includes('APA'), 'growler abre no mesmo modal');
-  A(t.includes('4,7%') && t.includes('30'), 'growler mostra ABV e IBU');
+  A(t.includes('7x1') && t.includes('German IPA'), 'growler abre no mesmo modal');
+  A(t.includes('6,0%') && t.includes('60'), 'growler mostra ABV e IBU');
 
   const noTopo = await p.evaluate((w) => {
     const el = document.elementFromPoint(w / 2, 30);
@@ -132,17 +132,51 @@ async function testaDicaMenu(p, largura) {
     A(!dentro, `seta ${lado} nao intercepta o ponteiro`);
   }
 
-  for (const nome of ['Início', 'Catálogo', 'Barris & Eventos', 'Growlers', 'Nossa História', 'Onde Encontrar', 'Revenda']) {
+  for (const nome of ['Início', 'Catálogo', 'Barris & Eventos', 'Nossa História', 'Onde Encontrar', 'Revenda']) {
     await p.getByRole('button', { name: nome, exact: true }).first().click({ timeout: 8000 });
     await p.waitForTimeout(100);
   }
-  A(true, 'os 7 atalhos continuam clicaveis com elas por cima');
+  A(true, 'os 6 atalhos continuam clicaveis com elas por cima');
 
   await rola(max);
   v = await vis();
   A(v.esq && !v.dir, 'estado correto depois de navegar pelas telas');
   await p.getByRole('button', { name: 'Início', exact: true }).first().click();
   await p.waitForTimeout(200);
+}
+
+// Latas e growlers vivem no mesmo catalogo, separados por dois titulos.
+async function testaCatalogoUnificado(p) {
+  console.log('\ncatalogo unificado');
+  A(await p.getByRole('button', { name: 'Growlers', exact: true }).count() === 0, 'Growlers saiu do menu');
+
+  await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
+  await p.waitForTimeout(350);
+
+  const titulos = await p.$$eval('h2', (hs) => hs.map((h) => h.textContent.trim()));
+  A(titulos.includes('Latas') && titulos.includes('Growlers'), `tem as duas secoes (${titulos.join(', ')})`);
+  A(titulos.indexOf('Latas') < titulos.indexOf('Growlers'), 'Latas vem antes de Growlers');
+
+  // 11 latas + 23 growlers, todas na mesma tela
+  const cards = await p.locator('button:has(img)').count();
+  A(cards === 34, `mostra as 34 bebidas juntas (achou ${cards})`);
+
+  // Weizen, Red Ale, Don Felix e Wikileaks existem como lata E como growler:
+  // e por isso que a divisao importa — os dois cards tem de coexistir.
+  for (const nome of ['Weizen', 'Red Ale', 'Don Felix', 'Wikileaks']) {
+    const n = await p.locator('button:has(img)').filter({ hasText: nome }).count();
+    A(n === 2, `"${nome}" aparece nas duas secoes (${n} cards)`);
+  }
+
+  // o CTA de growler veio junto da pagina antiga
+  A(await p.getByRole('link', { name: 'Pedir meu Growler' }).count() === 1, 'CTA "Pedir meu Growler" preservado');
+
+  // e o card da home leva para ca, ja que a pagina de growlers nao existe mais
+  await p.getByRole('button', { name: 'Início', exact: true }).first().click();
+  await p.waitForTimeout(300);
+  await p.locator('div', { hasText: /^Growlers de 1L/ }).first().click();
+  await p.waitForTimeout(350);
+  A(await p.locator('h1').first().textContent() === 'Catálogo de Bebidas', 'card "Growlers de 1L" da home leva ao catalogo');
 }
 
 // O iFood ficou so no botao do hero da home; produtos e demais telas nao tem.
@@ -156,7 +190,7 @@ async function testaIfood(p) {
   A(naHome.length === 1, `home tem exatamente 1 link (achou ${naHome.length})`);
   A(naHome[0] === esperado, 'aponta para a URL da loja, com o UTM');
 
-  for (const tela of ['Catálogo', 'Barris & Eventos', 'Growlers', 'Nossa História', 'Onde Encontrar', 'Revenda']) {
+  for (const tela of ['Catálogo', 'Barris & Eventos', 'Nossa História', 'Onde Encontrar', 'Revenda']) {
     await p.getByRole('button', { name: tela, exact: true }).first().click();
     await p.waitForTimeout(250);
     A(await p.locator('a[href*="ifood"]').count() === 0, `${tela}: nenhum link`);
@@ -175,7 +209,7 @@ async function testaWhatsApp(p) {
   console.log('\nlinks de whatsapp');
   const esperado = 'https://wa.me/5518996254970'; // wa.me so aceita digitos
   let total = 0;
-  for (const tela of ['Início', 'Barris & Eventos', 'Growlers', 'Onde Encontrar', 'Revenda']) {
+  for (const tela of ['Início', 'Catálogo', 'Barris & Eventos', 'Onde Encontrar', 'Revenda']) {
     await p.getByRole('button', { name: tela, exact: true }).first().click();
     await p.waitForTimeout(300);
     const hrefs = await p.$$eval('a[href*="wa.me"]', (as) => as.map((a) => a.href));
@@ -286,6 +320,7 @@ async function testaToque(p) {
     await testaDicaMenu(p, largura);
     await testaModal(p, largura);
     if (largura === 1280) {
+      await testaCatalogoUnificado(p);
       await testaIfood(p);
       await testaWhatsApp(p);
       await testaCarrossel(p);

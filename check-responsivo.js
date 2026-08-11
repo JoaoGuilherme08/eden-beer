@@ -7,7 +7,7 @@
 const { chromium } = require('playwright');
 
 const URL = process.env.SITE_URL;
-const PAGES = ['Início', 'Catálogo', 'Barris & Eventos', 'Growlers', 'Nossa História', 'Onde Encontrar', 'Revenda'];
+const PAGES = ['Início', 'Catálogo', 'Barris & Eventos', 'Nossa História', 'Onde Encontrar', 'Revenda'];
 
 // Um elemento so "estoura" se nenhum ancestral recorta o overflow — a marquee
 // e larga de proposito dentro de um overflow:hidden.
