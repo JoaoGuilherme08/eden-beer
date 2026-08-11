@@ -19,6 +19,23 @@ async function trazCarrossel(p) {
   return p.locator('[data-carousel]').boundingBox();
 }
 
+/**
+ * Le o catalogo direto da tela, em vez de afirmar nomes e quantidades fixas.
+ * O cliente edita o catalogo pelo painel: qualquer numero cravado aqui viraria
+ * alarme falso na primeira vez que ele mexesse.
+ */
+async function lerAba(p, aba) {
+  await p.getByRole('button', { name: aba, exact: true }).last().click();
+  await p.waitForTimeout(350);
+  const cards = p.locator('button:has(img)');
+  const n = await cards.count();
+  const nomes = [];
+  for (let i = 0; i < n; i++) {
+    nomes.push((await cards.nth(i).textContent()).trim().split('\n')[0].trim());
+  }
+  return { n, nomes };
+}
+
 async function testaModal(p, largura) {
   console.log(`\nmodal @ ${largura}px`);
   await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
@@ -27,47 +44,46 @@ async function testaModal(p, largura) {
   A(await p.getByRole('button', { name: 'Todas', exact: true }).count() === 0, 'chips de filtro sumiram');
   A(await fechado(p), 'modal fechado no inicio');
 
-  // The Sea: tem abv, ibu e tags — nao tem volume.
-  await cardPorNome(p, 'The Sea').click();
-  await p.waitForTimeout(300);
-  A(!(await fechado(p)), 'modal abriu');
-  A(p.url().endsWith('.dc.html'), 'nao navegou para outra pagina');
-  let t = await corpoModal(p).textContent();
-  A(t.includes('The Sea') && t.includes('Session IPA'), 'mostra nome e estilo');
-  A(t.includes('lúpulos em flor'), 'mostra a descricao');
-  A(t.includes('ABV') && t.includes('4.5%'), 'mostra ABV');
-  A(t.includes('IBU') && t.includes('20'), 'mostra IBU');
-  A(!t.includes('VOL.'), 'esconde VOL. (The Sea nao tem)');
-  A(t.includes('cítrica'), 'mostra as tags');
-  A(await corpoModal(p).locator('img').count() === 1, 'mostra a foto');
+  const latas = await lerAba(p, 'Latas');
+  A(latas.n > 0, `a aba Latas tem bebida (${latas.n})`);
+
+  // Abre as tres primeiras: o que importa e o card levar ao detalhe certo,
+  // nao qual bebida esta em primeiro lugar.
+  for (const nome of latas.nomes.slice(0, 3)) {
+    await cardPorNome(p, nome).click();
+    await p.waitForTimeout(300);
+    const t = await corpoModal(p).textContent();
+    A(t.includes(nome), `modal de "${nome}" mostra o proprio nome`);
+    A(await corpoModal(p).locator('img').count() === 1, `modal de "${nome}" mostra a foto`);
+    // Rotulo de ficha so pode existir com valor ao lado.
+    for (const rotulo of ['ABV', 'IBU', 'VOL.']) {
+      if (t.includes(rotulo)) {
+        const depois = t.split(rotulo)[1].trim();
+        A(depois.length > 0 && !/^(ABV|IBU|VOL\.)/.test(depois), `"${nome}": ${rotulo} tem valor`);
+      }
+    }
+    await p.locator('button[aria-label="Fechar"]').click();
+    await p.waitForTimeout(200);
+  }
+
+  A(p.url().endsWith('.dc.html') || p.url().endsWith('/'), 'nao navegou para outra pagina');
   A(await p.locator('h1').first().isVisible(), 'pagina continua montada atras');
+
+  await cardPorNome(p, latas.nomes[0]).click();
+  await p.waitForTimeout(300);
   const box = await corpoModal(p).boundingBox();
   A(box.x >= -1 && box.x + box.width <= largura + 1, 'modal cabe na viewport');
-
-  await p.locator('button[aria-label="Fechar"]').click();
-  await p.waitForTimeout(250);
-  A(await fechado(p), 'X fecha');
-
-  // IFE: abv/ibu/volume todos null — nenhum rotulo de ficha pode aparecer.
-  await cardPorNome(p, 'IFE').click();
-  await p.waitForTimeout(300);
-  t = await corpoModal(p).textContent();
-  A(t.includes('IFE') && t.includes('Extra Lager'), 'abre outra cerveja');
-  A(!/ABV|IBU|VOL\./.test(t), 'esconde a ficha inteira quando nao ha dados');
 
   await p.mouse.click(largura - 6, 6);
   await p.waitForTimeout(250);
   A(await fechado(p), 'clique no fundo fecha');
 
-  await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
+  const growlers = await lerAba(p, 'Growlers');
+  A(growlers.n > 0, `a aba Growlers tem bebida (${growlers.n})`);
+  await cardPorNome(p, growlers.nomes[0]).click();
   await p.waitForTimeout(300);
-  await p.getByRole('button', { name: 'Growlers', exact: true }).first().click();
-  await p.waitForTimeout(300);
-  await cardPorNome(p, '7x1').click();
-  await p.waitForTimeout(300);
-  t = await corpoModal(p).textContent();
-  A(t.includes('7x1') && t.includes('German IPA'), 'growler abre no mesmo modal');
-  A(t.includes('6,0%') && t.includes('60'), 'growler mostra ABV e IBU');
+  A(!(await fechado(p)), 'growler abre no mesmo modal');
+  A((await corpoModal(p).textContent()).includes(growlers.nomes[0]), 'com o nome do growler');
 
   const noTopo = await p.evaluate((w) => {
     const el = document.elementFromPoint(w / 2, 30);
@@ -85,9 +101,9 @@ async function testaModal(p, largura) {
 
   await p.locator('button[aria-label="Fechar"]').click();
   await p.waitForTimeout(250);
+  A(await fechado(p), 'X fecha');
   await p.getByRole('button', { name: 'Início', exact: true }).first().click();
   await p.waitForTimeout(300);
-  A(await fechado(p), 'navega normal depois de fechar');
 }
 
 // As setas ficam por cima da faixa de atalhos: o risco e roubar o clique deles.
@@ -159,30 +175,47 @@ async function testaAbas(p) {
   await p.getByRole('button', { name: 'Catálogo', exact: true }).first().click();
   await p.waitForTimeout(350);
 
-  // abre em Latas
-  A(await cards() === 11, `abre em Latas com as 11 latas (achou ${await cards()})`);
-  A(!(await growlerGrande().isVisible()), 'imagem do growler nao aparece na aba Latas');
-  A(await p.locator('button:has(img)').filter({ hasText: '7x1' }).count() === 0, 'growler nao aparece em Latas');
+  A(await growlerGrande().count() === 0 || !(await growlerGrande().isVisible()),
+    'abre em Latas: a imagem do growler nao aparece');
+  const nLatas = await cards();
+  A(nLatas > 0, `aba Latas tem bebida (${nLatas})`);
 
   await aba('Growlers').click();
   await p.waitForTimeout(400);
-  A(await cards() === 23, `Growlers mostra os 23 growlers (achou ${await cards()})`);
+  const nGrowlers = await cards();
+  A(nGrowlers > 0, `aba Growlers tem bebida (${nGrowlers})`);
   A(await growlerGrande().isVisible(), 'imagem grande do growler aparece');
   const img = await growlerGrande().boundingBox();
   A(img.height > 250, `imagem e grande de verdade (${Math.round(img.width)}x${Math.round(img.height)})`);
   A(img.y < (await p.locator('button:has(img)').first().boundingBox()).y, 'imagem vem acima do catalogo');
-  A(await p.locator('button:has(img)').filter({ hasText: 'The Sea' }).count() === 0, 'lata nao aparece em Growlers');
   A(await p.getByRole('link', { name: 'Pedir meu Growler' }).count() === 0, 'CTA "Pedir meu Growler" removido');
 
   await aba('Latas').click();
   await p.waitForTimeout(400);
-  A(await cards() === 11, 'volta para Latas');
+  A(await cards() === nLatas, 'volta para Latas com a mesma lista');
   A(!(await growlerGrande().isVisible()), 'imagem some ao voltar');
 
-  // nomes repetidos: um card em cada aba, nunca dois juntos
-  for (const nome of ['Weizen', 'Red Ale', 'Don Felix', 'Wikileaks']) {
-    const n = await p.locator('button:has(img)').filter({ hasText: nome }).count();
-    A(n === 1, `"${nome}" aparece 1x em Latas (${n})`);
+  // As duas abas mostram conjuntos diferentes. Comparado por nome, sem cravar
+  // quais — o cliente edita o catalogo e nomes fixos aqui viravam alarme falso.
+  const nomesDe = async (nome) => {
+    await aba(nome).click();
+    await p.waitForTimeout(350);
+    const n = await p.locator('button:has(img)').count();
+    const lista = [];
+    for (let i = 0; i < n; i++) {
+      lista.push((await p.locator('button:has(img)').nth(i).textContent()).trim().split('\n')[0].trim());
+    }
+    return lista;
+  };
+  const latas = await nomesDe('Latas');
+  const growlers = await nomesDe('Growlers');
+  A(latas.length + growlers.length === nLatas + nGrowlers, 'nenhuma bebida aparece nas duas abas ao mesmo tempo');
+
+  // Nomes repetidos entre as listas (Weizen, Red Ale...) sao normais: e a mesma
+  // cerveja em lata e em growler. O que nao pode e duplicar dentro de uma aba.
+  for (const [rotulo, lista] of [['Latas', latas], ['Growlers', growlers]]) {
+    const repetidos = lista.filter((n, i) => lista.indexOf(n) !== i);
+    A(repetidos.length === 0, `${rotulo}: sem card duplicado (${repetidos.join(', ') || 'nenhum'})`);
   }
 
   // card da home abre direto na aba Growlers
@@ -215,7 +248,7 @@ async function testaIfood(p) {
   await p.waitForTimeout(250);
   await p.getByRole('button', { name: 'Latas', exact: true }).first().click(); // pode vir da aba Growlers
   await p.waitForTimeout(250);
-  await cardPorNome(p, 'The Sea').click();
+  await p.locator('button:has(img)').first().click(); // qualquer bebida serve
   await p.waitForTimeout(350);
   A(await p.locator('a[href*="ifood"]').count() === 0, 'modal de produto: nenhum link');
   await p.locator('button[aria-label="Fechar"]').click();

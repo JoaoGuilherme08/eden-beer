@@ -202,6 +202,9 @@
           </button>
         </sc-for>
       </div>
+        <sc-if value="{{ semLatas }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:16px; color:#8a8072; padding:30px 0;">Nenhuma bebida por aqui no momento.</p>
+        </sc-if>
       </sc-if>
 
       <sc-if value="{{ abaGrowlers }}" hint-placeholder-val="{{ false }}">
@@ -225,6 +228,9 @@
           </button>
         </sc-for>
       </div>
+        <sc-if value="{{ semGrowlers }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:16px; color:#8a8072; padding:30px 0;">Nenhuma bebida por aqui no momento.</p>
+        </sc-if>
       </sc-if>
     </div>
   </sc-if>
@@ -655,6 +661,10 @@ class Component extends DCLogic {
       abas,
       abaLatas: aba === 'latas',
       abaGrowlers: aba === 'growlers',
+      // O admin pode ocultar todas as bebidas de um tipo; sem isto a aba
+      // ficaria em branco sem explicacao nenhuma.
+      semLatas: PRODUCTS.length === 0,
+      semGrowlers: GROWLERS.length === 0,
       isBarris: page === 'barris',
       isHistoria: page === 'historia',
       isOnde: page === 'onde',
