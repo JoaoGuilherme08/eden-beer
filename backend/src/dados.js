@@ -8,13 +8,24 @@ export const CHAVES_CONFIG = [
   'ultima_publicacao',
 ];
 
+/**
+ * As fotos ficam gravadas como caminho relativo (/fotos/chave) para o banco nao
+ * depender de dominio. Quem consome isto e o site, noutro dominio, entao o
+ * snapshot as entrega absolutas.
+ */
+const absoluta = (u) => {
+  if (!u || !u.startsWith('/fotos/')) return u;
+  const base = (process.env.API_PUBLIC_URL || '').replace(/\/$/, '');
+  return base ? base + u : u;
+};
+
 /** Linha do banco -> objeto no formato que o site ja consome. */
 export const paraSite = (b) => ({
   id: b.id,
   name: b.nome,
   style: b.estilo,
   accent: b.accent,
-  image: b.imagem_url,
+  image: absoluta(b.imagem_url),
   description: b.descricao,
   abv: b.abv,
   ibu: b.ibu,

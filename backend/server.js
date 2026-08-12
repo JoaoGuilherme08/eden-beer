@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import session from 'express-session';
 import { csrf, exigirSessao } from './src/auth.js';
 import { pool, ssl } from './src/db.js';
+import { buscar, configurado } from './src/s3.js';
 import rotasAdmin from './src/rotas/admin.js';
 import rotasLogin from './src/rotas/login.js';
 import rotasPublicas from './src/rotas/publico.js';
@@ -45,6 +46,30 @@ app.use(
   }),
 );
 
+/**
+ * Serve as fotos do bucket, que e privado — nao da para o site apontar direto
+ * para ele. Cache longo e imutavel: a chave carrega um uuid, entao uma foto
+ * trocada vira URL nova e nunca precisa invalidar esta.
+ */
+app.get('/fotos/*', async (req, res) => {
+  const chave = req.params[0];
+  if (!chave || chave.includes('..')) return res.status(400).json({ erro: 'chave invalida' });
+  try {
+    const f = await buscar(chave);
+    res.set({
+      'Content-Type': f.contentType || 'application/octet-stream',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      ...(f.etag ? { ETag: f.etag } : {}),
+      ...(f.tamanho ? { 'Content-Length': String(f.tamanho) } : {}),
+      'Access-Control-Allow-Origin': '*',
+    });
+    f.corpo.pipe(res);
+  } catch (e) {
+    const naoAchou = e.name === 'NoSuchKey' || e.$metadata?.httpStatusCode === 404;
+    res.status(naoAchou ? 404 : 502).json({ erro: naoAchou ? 'foto nao encontrada' : 'falha ao ler a foto' });
+  }
+});
+
 // Endpoint lido pelo build da Vercel. Aberto de proposito: o conteudo e o mesmo
 // catalogo que qualquer visitante ve no site.
 app.use('/api/public', rotasPublicas);
@@ -76,7 +101,7 @@ app.get('/admin/*', (req, res, next) => {
  * principalmente, transforma "o deploy nao sobe" em uma causa nomeada.
  */
 app.get('/health', async (_req, res) => {
-  const estado = { ok: true, banco: 'ok', tabelas: 'ok', s3: !!process.env.S3_BUCKET, deployHook: !!process.env.VERCEL_DEPLOY_HOOK_URL };
+  const estado = { ok: true, banco: 'ok', tabelas: 'ok', s3: configurado(), deployHook: !!process.env.VERCEL_DEPLOY_HOOK_URL };
   try {
     await pool.query('select 1');
   } catch (e) {
@@ -116,7 +141,7 @@ console.log(
     `[boot] NODE_ENV=${process.env.NODE_ENV || '(vazio)'} porta=${PORTA} ssl-no-banco=${ssl}`,
     `[boot] DATABASE_URL=${marca(process.env.DATABASE_URL)} SESSION_SECRET=${marca(process.env.SESSION_SECRET)}`,
     `[boot] SITE_PUBLIC_URL=${marca(process.env.SITE_PUBLIC_URL)} VERCEL_DEPLOY_HOOK_URL=${marca(process.env.VERCEL_DEPLOY_HOOK_URL)}`,
-    `[boot] S3_BUCKET=${marca(process.env.S3_BUCKET)} AWS_REGION=${marca(process.env.AWS_REGION)}`,
+    `[boot] bucket=${marca(configurado())} endpoint=${process.env.AWS_ENDPOINT_URL || '(padrao aws)'}`,
     `[boot] painel: ${existsSync(join(dist, 'index.html')) ? 'ok' : 'FALTA admin/dist — rode npm run build'}`,
   ].join('\n'),
 );

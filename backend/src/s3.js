@@ -1,20 +1,46 @@
 import { randomUUID } from 'node:crypto';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
-const TIPOS_OK = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/avif']);
-const TAMANHO_MAX = 8 * 1024 * 1024;
-const EXPIRA_EM = 60; // segundos
+/**
+ * Armazenamento das fotos no bucket da Railway (S3-compativel, endpoint proprio).
+ *
+ * Duas restricoes do bucket definiram o desenho, e as duas foram medidas:
+ *  - Objeto nao pode ser publico. ACL public-read e aceito mas ignorado, e
+ *    PutBucketPolicy responde NotImplemented. Por isso as fotos saem por
+ *    GET /fotos/*, servidas por este app (com CDN da Railway na frente).
+ *  - Nao ha CORS. O preflight volta 200 sem Access-Control-Allow-Origin, entao
+ *    upload assinado direto do navegador seria recusado. O arquivo sobe pelo
+ *    app; como app e bucket estao dentro da Railway, o salto e barato.
+ */
+
+const TIPOS_OK = new Map([
+  ['image/jpeg', 'jpg'],
+  ['image/png', 'png'],
+  ['image/webp', 'webp'],
+  ['image/avif', 'avif'],
+]);
+export const TAMANHO_MAX = 8 * 1024 * 1024;
 
 const erro = (codigoHttp, msg) => Object.assign(new Error(msg), { codigoHttp });
 
+export const configurado = () =>
+  !!(process.env.AWS_S3_BUCKET_NAME && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY);
+
 let cliente;
 function pegarCliente() {
-  if (!cliente) cliente = new S3Client({ region: process.env.AWS_REGION });
+  if (!cliente) {
+    cliente = new S3Client({
+      region: process.env.AWS_DEFAULT_REGION || 'auto',
+      // Sem endpoint o SDK iria para a AWS de verdade.
+      endpoint: process.env.AWS_ENDPOINT_URL || undefined,
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      },
+    });
+  }
   return cliente;
 }
-
-const extensao = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/avif': 'avif' };
 
 const apelido = (nome) =>
   String(nome || 'foto')
@@ -26,38 +52,35 @@ const apelido = (nome) =>
     .replace(/^-|-$/g, '')
     .slice(0, 50) || 'foto';
 
-/**
- * Devolve uma URL PUT de vida curta. O arquivo vai do navegador direto para o
- * S3 — a Railway nunca ve os bytes. O content-type entra na assinatura, entao
- * quem tiver a URL nao consegue subir outra coisa com ela.
- */
-export async function assinarUpload({ nomeArquivo, contentType, tamanho }) {
-  // O que o cliente mandou vem primeiro: erro dele e 400, e nao pode ser
-  // mascarado por 503 de configuracao faltando no servidor.
+/** Chave nova, sempre unica: trocar a foto nunca reaproveita URL em cache. */
+export const novaChave = (nomeArquivo, contentType, pasta = 'catalogo') =>
+  `${pasta}/${randomUUID()}-${apelido(nomeArquivo)}.${TIPOS_OK.get(contentType)}`;
+
+export async function guardar({ corpo, contentType, nomeArquivo, chave }) {
   if (!TIPOS_OK.has(contentType)) {
     throw erro(400, `tipo ${contentType || '(vazio)'} nao permitido; use jpeg, png, webp ou avif`);
   }
-  if (!Number.isFinite(tamanho) || tamanho <= 0) throw erro(400, 'tamanho invalido');
-  if (tamanho > TAMANHO_MAX) throw erro(413, `arquivo acima de ${TAMANHO_MAX / 1024 / 1024}MB`);
+  if (!corpo?.length) throw erro(400, 'arquivo vazio');
+  if (corpo.length > TAMANHO_MAX) throw erro(413, `arquivo acima de ${TAMANHO_MAX / 1024 / 1024}MB`);
+  if (!configurado()) throw erro(503, 'bucket nao configurado no servidor');
 
-  if (!process.env.S3_BUCKET) throw erro(503, 'S3_BUCKET nao configurado');
-
-  const chave = `catalogo/${randomUUID()}-${apelido(nomeArquivo)}.${extensao[contentType]}`;
-
-  const urlPut = await getSignedUrl(
-    pegarCliente(),
+  const Key = chave || novaChave(nomeArquivo, contentType);
+  await pegarCliente().send(
     new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: chave,
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key,
+      Body: corpo,
       ContentType: contentType,
-      ContentLength: tamanho,
+      CacheControl: 'public, max-age=31536000, immutable',
     }),
-    // Sem signableHeaders o SDK deixa content-type de fora da assinatura, e a
-    // URL passaria a aceitar qualquer tipo de arquivo. Assinando os dois, o
-    // navegador tem de mandar exatamente o tipo e o tamanho declarados aqui.
-    { expiresIn: EXPIRA_EM, signableHeaders: new Set(['content-type', 'content-length']) },
   );
+  return { chave: Key, url: `/fotos/${Key}` };
+}
 
-  const base = (process.env.S3_PUBLIC_BASE_URL || '').replace(/\/$/, '');
-  return { urlPut, urlFinal: `${base}/${chave}`, chave, expiraEm: EXPIRA_EM };
+/** Usado por GET /fotos/*: o bucket e privado, quem serve e este app. */
+export async function buscar(chave) {
+  const r = await pegarCliente().send(
+    new GetObjectCommand({ Bucket: process.env.AWS_S3_BUCKET_NAME, Key: chave }),
+  );
+  return { corpo: r.Body, contentType: r.ContentType, tamanho: r.ContentLength, etag: r.ETag };
 }

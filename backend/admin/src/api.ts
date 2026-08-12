@@ -14,6 +14,8 @@ export interface Sessao {
 export function urlFoto(valor: string | null, siteUrl: string): string {
   if (!valor) return '';
   if (/^(https?:)?\/\//.test(valor) || valor.startsWith('data:')) return valor;
+  // /fotos/... e servido por este mesmo dominio (o painel roda no backend).
+  if (valor.startsWith('/')) return valor;
   if (!siteUrl) return valor;
   return `${siteUrl.replace(/\/$/, '')}/${valor.replace(/^\//, '')}`;
 }

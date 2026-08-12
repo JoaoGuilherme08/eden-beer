@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { CHAVES_CONFIG, lerConfig } from '../dados.js';
 import { emTransacao, q } from '../db.js';
-import { assinarUpload } from '../s3.js';
+import { TAMANHO_MAX, guardar } from '../s3.js';
 
 const router = Router();
 
@@ -220,16 +220,28 @@ router.patch('/config', async (req, res, next) => {
 
 // ---- upload e publicacao ----------------------------------------------------
 
-router.post('/upload/assinar', async (req, res, next) => {
-  try {
-    const { nomeArquivo, contentType, tamanho } = req.body ?? {};
-    const assinado = await assinarUpload({ nomeArquivo, contentType, tamanho });
-    res.json(assinado);
-  } catch (e) {
-    if (e.codigoHttp) return res.status(e.codigoHttp).json({ erro: e.message });
-    next(e);
-  }
-});
+/**
+ * Recebe o arquivo cru no corpo, com o tipo no Content-Type e o nome original
+ * num header. Sem multipart: e um arquivo so, e express.raw resolve sem
+ * dependencia nenhuma.
+ */
+router.post(
+  '/upload',
+  express.raw({ type: ['image/jpeg', 'image/png', 'image/webp', 'image/avif'], limit: TAMANHO_MAX }),
+  async (req, res, next) => {
+    try {
+      const salvo = await guardar({
+        corpo: req.body,
+        contentType: req.get('content-type'),
+        nomeArquivo: req.get('x-nome-arquivo') || 'foto',
+      });
+      res.status(201).json(salvo);
+    } catch (e) {
+      if (e.codigoHttp) return res.status(e.codigoHttp).json({ erro: e.message });
+      next(e);
+    }
+  },
+);
 
 router.post('/publicar', async (_req, res, next) => {
   try {
