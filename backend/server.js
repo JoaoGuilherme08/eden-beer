@@ -84,6 +84,14 @@ app.use(
     message: { erro: 'tentativas demais, tente de novo em alguns minutos' },
   }),
 );
+// O CDN da Railway esta ligado por causa de /fotos. O que responde por sessao
+// ou reflete o banco nao pode ser cacheado na borda. Os assets do painel ficam
+// de fora: tem hash no nome e podem ser cacheados a vontade.
+app.use(['/admin/api', '/admin/login', '/admin/logout', '/admin/sessao', '/api'], (_req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  next();
+});
+
 app.use('/admin', rotasLogin);
 app.use('/admin/api', exigirSessao, csrf, rotasAdmin);
 
