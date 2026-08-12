@@ -1,5 +1,11 @@
 # Backend + painel admin — Eden Beer
 
+| | |
+|---|---|
+| Painel | https://eden-beer-production.up.railway.app/admin |
+| Site | https://eden-beer.vercel.app |
+| Saúde | https://eden-beer-production.up.railway.app/health |
+
 API, banco e o painel onde o cliente gerencia catálogo, barris e contatos.
 Vai para a **Railway**. O site público continua estático na **Vercel** e recebe
 os dados por um `data.js` gerado no build.
@@ -132,6 +138,17 @@ curl https://SEU-APP.up.railway.app/health
 a *pública* (`.rlwy.net` / `.railway.app`) exige. O código decide pelo host, então
 os dois casos funcionam sem você tocar em nada. Prefira a privada — é mais rápida
 e não sai da rede deles.
+
+## Cache: duas armadilhas que já morderam
+
+Com o CDN da Railway ligado (por causa de `/fotos`), **o que reflete o banco não
+pode ser cacheado**. `/api/public/site` responde `no-store`: com cache ali, o
+build da Vercel gerava `data.js` com catálogo velho e o cliente clicava em
+Publicar sem o site mudar.
+
+Do outro lado, no `vercel.json` o `/data.js` precisa de `s-maxage=0`, não só
+`max-age=0` — `max-age` só governa o navegador; o CDN obedece `s-maxage`. Sem
+isso o site servia o catálogo antigo por minutos depois de publicar.
 
 ## Notas de segurança
 
