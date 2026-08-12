@@ -7,3 +7,5 @@ dist/
 
 # ambiente local
 .env.local
+.vercel
+.env*
