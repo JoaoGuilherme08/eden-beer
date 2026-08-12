@@ -103,6 +103,28 @@ E CORS permitindo `PUT` do domínio da Railway:
 O upload é assinado com `content-type` e `content-length` fixos e expira em 60s,
 então a URL não serve para subir outra coisa nem vale depois.
 
+## Quando o deploy não sobe
+
+O boot imprime o que encontrou e `GET /health` diz o que falta:
+
+```bash
+curl https://SEU-APP.up.railway.app/health
+```
+
+| Resposta | Significa |
+|---|---|
+| `200 {"ok":true}` | tudo de pé |
+| `"faltam tabelas (0/5)"` | falta rodar `npm run migrar` |
+| `banco: falhou: ECONNREFUSED` | `DATABASE_URL` errada, ou o Postgres não foi vinculado ao serviço |
+| `banco: falhou: ... SSL` | está usando a URL pública sem TLS — veja a nota de SSL abaixo |
+| crash com `DATABASE_URL nao definida` | a variável não chegou no serviço |
+| `painel: FALTA admin/dist` | o build command não rodou (`npm ci && npm run build`) |
+
+**SSL:** a URL *privada* da Railway (`postgres.railway.internal`) fala sem TLS;
+a *pública* (`.rlwy.net` / `.railway.app`) exige. O código decide pelo host, então
+os dois casos funcionam sem você tocar em nada. Prefira a privada — é mais rápida
+e não sai da rede deles.
+
 ## Notas de segurança
 
 - Senha com `scrypt` do `node:crypto`, comparada com `timingSafeEqual`.
