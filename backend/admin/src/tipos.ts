@@ -41,9 +41,8 @@ export interface Config {
   ultima_publicacao?: string;
 }
 
-export interface AssinaturaUpload {
-  urlPut: string;
-  urlFinal: string;
+export interface FotoSalva {
   chave: string;
-  expiraEm: number;
+  /** Caminho relativo (/fotos/...), servido pelo proprio backend. */
+  url: string;
 }

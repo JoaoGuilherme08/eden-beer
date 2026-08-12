@@ -1,4 +1,4 @@
-import type { AssinaturaUpload, Barril, Bebida, BebidaEntrada, Config, Tipo } from './tipos';
+import type { Barril, Bebida, BebidaEntrada, Config, FotoSalva, Tipo } from './tipos';
 
 export interface Sessao {
   email: string;
@@ -85,24 +85,19 @@ export const api = {
 
   publicar: () => chamar<{ ok: true; ultima_publicacao: string }>('/admin/api/publicar', { method: 'POST' }),
 
-  assinarUpload: (arquivo: File) =>
-    chamar<AssinaturaUpload>('/admin/api/upload/assinar', {
+  subirFoto: (arquivo: File) =>
+    chamar<FotoSalva>('/admin/api/upload', {
       method: 'POST',
-      body: corpo({ nomeArquivo: arquivo.name, contentType: arquivo.type, tamanho: arquivo.size }),
+      body: arquivo,
+      headers: { 'content-type': arquivo.type, 'x-nome-arquivo': encodeURIComponent(arquivo.name) },
     }),
 };
 
 /**
- * Sobe o arquivo direto para o S3 com a URL assinada. O content-type tem de ser
- * exatamente o que foi assinado, senao o S3 recusa.
+ * O bucket da Railway e privado e nao tem CORS, entao o arquivo sobe pelo app
+ * em vez de ir assinado direto do navegador.
  */
 export async function subirFoto(arquivo: File): Promise<string> {
-  const { urlPut, urlFinal } = await api.assinarUpload(arquivo);
-  const r = await fetch(urlPut, {
-    method: 'PUT',
-    body: arquivo,
-    headers: { 'content-type': arquivo.type },
-  });
-  if (!r.ok) throw new ErroApi(r.status, `o S3 recusou o upload (${r.status})`);
-  return urlFinal;
+  const { url } = await api.subirFoto(arquivo);
+  return url;
 }

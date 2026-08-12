@@ -4,7 +4,7 @@
 //   npm run subir-imagens            (mostra o que faria)
 //   npm run subir-imagens -- --valendo
 import { readFile, readdir, writeFile } from 'node:fs/promises';
-import { dirname, extname, join, relative } from 'node:path';
+import { basename, dirname, extname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { guardar, novaChave } from '../src/s3.js';
 import { emTransacao, pool, q } from '../src/db.js';
@@ -45,10 +45,10 @@ for (const caminho of arquivos) {
   bytes += dados.length;
 
   if (!VALENDO) {
-    mapa.set(rel, `/fotos/${novaChave(caminho, contentType, 'site')}`);
+    mapa.set(rel, `/fotos/${novaChave(basename(caminho), contentType, 'site')}`);
     continue;
   }
-  const { url } = await guardar({ corpo: dados, contentType, nomeArquivo: caminho, chave: novaChave(caminho, contentType, 'site') });
+  const { url } = await guardar({ corpo: dados, contentType, nomeArquivo: basename(caminho), chave: novaChave(basename(caminho), contentType, 'site') });
   mapa.set(rel, url);
   process.stdout.write('.');
 }
