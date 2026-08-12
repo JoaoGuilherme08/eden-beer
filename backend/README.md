@@ -53,12 +53,13 @@ O painel tem checagem de navegador junto das suítes do site, na raiz do repo.
 |---|---|---|
 | `DATABASE_URL` | sim | a Railway injeta ao adicionar o Postgres |
 | `SESSION_SECRET` | sim em produção | assina o cookie de sessão. Use algo longo e aleatório |
-| `SITE_PUBLIC_URL` | recomendada | domínio do site; sem ela o painel não exibe as fotos de caminho relativo |
+| `SITE_PUBLIC_URL` | opcional | só para fotos legadas em `uploads/`; depois da migração não é usada |
 | `VERCEL_DEPLOY_HOOK_URL` | para publicar | Deploy Hook criado em Vercel → Settings → Git |
-| `AWS_REGION` | para upload | ex. `us-east-1` |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | para upload | usuário IAM só com `s3:PutObject` no bucket |
-| `S3_BUCKET` | para upload | nome do bucket |
-| `S3_PUBLIC_BASE_URL` | para upload | ex. `https://SEU-BUCKET.s3.us-east-1.amazonaws.com` |
+| `AWS_ENDPOINT_URL` | para upload | endpoint do bucket da Railway |
+| `AWS_DEFAULT_REGION` | para upload | `auto` no bucket da Railway |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | para upload | `railway bucket credentials` |
+| `AWS_S3_BUCKET_NAME` | para upload | nome do bucket |
+| `API_PUBLIC_URL` | sim | domínio deste backend; o snapshot usa para absolutizar as fotos |
 | `NODE_ENV` | em produção | `production` — liga o cookie `secure` |
 
 Sem as variáveis de S3 o painel funciona inteiro, só o upload de foto responde
@@ -73,35 +74,42 @@ Sem as variáveis de S3 o painel funciona inteiro, só o upload de foto responde
 5. Uma vez, pelo console da Railway: `npm run migrar`, `npm run semear` e
    `npm run criar-admin -- email 'senha'`.
 
-## S3
+## Fotos (bucket da Railway)
 
-Bucket com **Block Public Access desligado só para leitura** e esta política:
+O bucket é criado pelo próprio Railway (`railway bucket`). Pegue as credenciais
+com `railway bucket credentials` e ponha no serviço: `AWS_ENDPOINT_URL`,
+`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_S3_BUCKET_NAME`,
+`AWS_DEFAULT_REGION`.
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": "*",
-    "Action": "s3:GetObject",
-    "Resource": "arn:aws:s3:::SEU-BUCKET/catalogo/*"
-  }]
-}
+**Duas restrições do bucket definiram o desenho** — as duas foram medidas, não
+supostas:
+
+- **Objeto não pode ser público.** `ACL: public-read` é aceito mas ignorado, e
+  `PutBucketPolicy` responde `NotImplemented`. Por isso o site não aponta para o
+  bucket: as fotos saem por `GET /fotos/*`, servidas por este app com
+  `Cache-Control: immutable` de 1 ano. Ligue o CDN (`railway cdn enable`) e elas
+  passam a vir cacheadas na borda.
+- **Não há CORS.** O preflight volta 200 sem `Access-Control-Allow-Origin`, então
+  upload assinado direto do navegador seria recusado. O arquivo sobe pelo app,
+  em `POST /admin/api/upload` (corpo cru, sem multipart).
+
+A chave carrega um uuid, então trocar a foto gera URL nova — o cache de 1 ano
+nunca precisa ser invalidado.
+
+No banco a foto fica como caminho relativo (`/fotos/chave`) para não gravar
+domínio; quem absolutiza é o snapshot, usando `API_PUBLIC_URL`.
+
+### Migrar as imagens existentes
+
+```bash
+npm run subir-imagens              # simula
+npm run subir-imagens -- --valendo # sobe e repõe as URLs no banco
 ```
 
-E CORS permitindo `PUT` do domínio da Railway:
-
-```json
-[{
-  "AllowedHeaders": ["*"],
-  "AllowedMethods": ["PUT"],
-  "AllowedOrigins": ["https://SEU-APP.up.railway.app"],
-  "ExposeHeaders": []
-}]
-```
-
-O upload é assinado com `content-type` e `content-length` fixos e expira em 60s,
-então a URL não serve para subir outra coisa nem vale depois.
+Sobe tudo que houver em `uploads/` e repõe as fotos do catálogo. As referências
+fixas do `.dc.html` (logo, hero, ícones) **não** são tocadas: apontá-las para a
+Railway faria o site perder a identidade visual se ela caísse, e hoje elas
+viajam junto com o site na Vercel. Use `--html` se quiser trocar também.
 
 ## Quando o deploy não sobe
 
